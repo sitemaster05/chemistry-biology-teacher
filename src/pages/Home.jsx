@@ -9,6 +9,7 @@ import {
   Dna,
   FlaskConical,
   GraduationCap,
+  Image,
   Mail,
   MapPin,
   MessageCircle,
@@ -100,6 +101,7 @@ function Home() {
   const [materials, setMaterials] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [gallery, setGallery] = useState([]);
   const [contacts, setContacts] = useState(defaultContacts);
   const [loading, setLoading] = useState(true);
 
@@ -112,6 +114,7 @@ function Home() {
         materialsResponse,
         achievementsResponse,
         reviewsResponse,
+        galleryResponse,
         contactsResponse,
       ] = await Promise.all([
         supabase.from("site_profile").select("*").eq("id", "main").maybeSingle(),
@@ -147,6 +150,13 @@ function Home() {
           .from("reviews")
           .select("*")
           .eq("is_published", true)
+          .order("created_at", { ascending: false }),
+
+        supabase
+          .from("gallery")
+          .select("*")
+          .eq("is_published", true)
+          .order("sort_order", { ascending: true })
           .order("created_at", { ascending: false }),
 
         supabase.from("contacts").select("*").eq("id", "main").maybeSingle(),
@@ -194,6 +204,12 @@ function Home() {
         console.error("reviews error:", reviewsResponse.error.message);
       } else {
         setReviews(reviewsResponse.data || []);
+      }
+
+      if (galleryResponse.error) {
+        console.error("gallery error:", galleryResponse.error.message);
+      } else {
+        setGallery(galleryResponse.data || []);
       }
 
       if (contactsResponse.error) {
@@ -252,6 +268,11 @@ function Home() {
       )
       .on(
         "postgres_changes",
+        { event: "*", schema: "public", table: "gallery" },
+        loadSiteData
+      )
+      .on(
+        "postgres_changes",
         { event: "*", schema: "public", table: "contacts" },
         loadSiteData
       )
@@ -304,6 +325,9 @@ function Home() {
             </a>
             <a href="#achievements" className="hover:text-cyan-200">
               Достижения
+            </a>
+            <a href="#gallery" className="hover:text-cyan-200">
+              Галерея
             </a>
             <a href="#contacts" className="hover:text-cyan-200">
               Контакты
@@ -607,6 +631,57 @@ function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section id="gallery" className="relative z-10 px-6 py-20">
+        <div className="mx-auto max-w-7xl">
+          <SectionTitle
+            badge="Галерея"
+            title="Фото из учебной практики"
+            text="Здесь можно показать кабинет, уроки, проекты, мероприятия, лабораторные работы и учебные материалы."
+          />
+
+          {gallery.length === 0 ? (
+            <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 text-center text-slate-400 backdrop-blur-xl">
+              Фотографии пока не добавлены.
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-3">
+              {gallery.map((item) => (
+                <motion.div
+                  key={item.id}
+                  whileHover={{ y: -8 }}
+                  className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 backdrop-blur-xl"
+                >
+                  <div className="relative">
+                    <img
+                      src={item.image_url}
+                      alt={item.title || "Фото галереи"}
+                      className="h-72 w-full object-cover"
+                    />
+
+                    <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-slate-950/70 px-4 py-2 text-sm text-cyan-100 backdrop-blur">
+                      <Image className="h-4 w-4" />
+                      Фото
+                    </div>
+                  </div>
+
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold">
+                      {item.title || "Без названия"}
+                    </h3>
+
+                    {item.description && (
+                      <p className="mt-3 text-sm leading-7 text-slate-300">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
