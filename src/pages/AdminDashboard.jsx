@@ -19,6 +19,7 @@ import ProfileManager from "../components/ProfileManager";
 import MaterialsManager from "../components/MaterialsManager";
 import ContactsManager from "../components/ContactsManager";
 import CollectionManager from "../components/CollectionManager";
+import GalleryManager from "../components/GalleryManager";
 
 const adminSections = [
   {
@@ -61,7 +62,7 @@ const adminSections = [
     key: "gallery",
     icon: <Image />,
     title: "Галерея",
-    text: "Фото кабинета, уроков, мероприятий и материалов.",
+    text: "Фото кабинета, уроков, мероприятий, лабораторных работ и учебных материалов.",
   },
   {
     key: "contacts",
@@ -109,30 +110,22 @@ function AdminDashboard() {
       return <CollectionManager type="reviews" />;
     }
 
+    if (activeSection === "gallery") {
+      return <GalleryManager />;
+    }
+
     if (activeSection === "contacts") {
       return <ContactsManager />;
     }
 
-    if (activeSection === "gallery") {
-      return (
-        <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
-          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
-            <Award className="h-7 w-7" />
-          </div>
-
-          <h3 className="text-2xl font-bold">Галерея будет позже</h3>
-
-          <p className="mt-3 text-slate-300">
-            Раздел с загрузкой фотографий добавим отдельным этапом через
-            Supabase Storage.
-          </p>
-        </div>
-      );
-    }
-
     return (
       <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+          <Award className="h-7 w-7" />
+        </div>
+
         <h3 className="text-2xl font-bold">Раздел не найден</h3>
+
         <p className="mt-3 text-slate-300">
           Выбери другой раздел в меню слева.
         </p>
