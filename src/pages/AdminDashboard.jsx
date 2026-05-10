@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Award,
   BookOpen,
   BriefcaseBusiness,
   Image,
@@ -12,11 +13,23 @@ import {
   Trophy,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import ProfileManager from "../components/ProfileManager";
 import MaterialsManager from "../components/MaterialsManager";
+import ContactsManager from "../components/ContactsManager";
+import SimpleCollectionManager from "../components/SimpleCollectionManager";
+
+const iconOptions = [
+  { value: "flask", label: "Колба" },
+  { value: "dna", label: "ДНК" },
+  { value: "graduation", label: "Обучение" },
+  { value: "book", label: "Книга" },
+  { value: "microscope", label: "Микроскоп" },
+  { value: "atom", label: "Атом" },
+];
 
 const adminSections = [
   {
-    key: "main",
+    key: "profile",
     icon: <Settings />,
     title: "Основная информация",
     text: "ФИО, описание, стаж, главный текст на сайте.",
@@ -55,13 +68,13 @@ const adminSections = [
     key: "contacts",
     icon: <Phone />,
     title: "Контакты",
-    text: "Телефон, email, Telegram, WhatsApp и город.",
+    text: "Телефон, email, Telegram, WhatsApp, город и адрес.",
   },
 ];
 
 function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState("materials");
+  const [activeSection, setActiveSection] = useState("profile");
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -130,6 +143,7 @@ function AdminDashboard() {
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
                     {section.icon}
                   </span>
+
                   <span>{section.title}</span>
                 </button>
               ))}
@@ -147,14 +161,158 @@ function AdminDashboard() {
               </p>
             </div>
 
-            {activeSection === "materials" ? (
-              <MaterialsManager />
-            ) : (
+            {activeSection === "profile" && <ProfileManager />}
+
+            {activeSection === "materials" && <MaterialsManager />}
+
+            {activeSection === "contacts" && <ContactsManager />}
+
+            {activeSection === "services" && (
+              <SimpleCollectionManager
+                tableName="services"
+                title="направление работы"
+                description="Добавляй и редактируй направления, которые отображаются на главной странице."
+                emptyItem={{
+                  title: "",
+                  description: "",
+                  icon_name: "flask",
+                  position: 0,
+                  is_published: true,
+                }}
+                fields={[
+                  {
+                    name: "title",
+                    label: "Название",
+                    placeholder: "Например: Химия",
+                  },
+                  {
+                    name: "icon_name",
+                    label: "Иконка",
+                    type: "select",
+                    options: iconOptions,
+                  },
+                  {
+                    name: "position",
+                    label: "Позиция",
+                    type: "number",
+                  },
+                  {
+                    name: "description",
+                    label: "Описание",
+                    type: "textarea",
+                    full: true,
+                  },
+                  {
+                    name: "is_published",
+                    type: "checkbox",
+                    checkboxLabel: "Показывать на сайте",
+                    full: true,
+                  },
+                ]}
+              />
+            )}
+
+            {activeSection === "achievements" && (
+              <SimpleCollectionManager
+                tableName="achievements"
+                title="достижение"
+                description="Добавляй сертификаты, курсы, конкурсы и достижения учеников."
+                emptyItem={{
+                  title: "",
+                  description: "",
+                  year: "",
+                  position: 0,
+                  is_published: true,
+                }}
+                fields={[
+                  {
+                    name: "title",
+                    label: "Название",
+                    placeholder: "Например: Курсы повышения квалификации",
+                  },
+                  {
+                    name: "year",
+                    label: "Год",
+                    placeholder: "2026",
+                  },
+                  {
+                    name: "position",
+                    label: "Позиция",
+                    type: "number",
+                  },
+                  {
+                    name: "description",
+                    label: "Описание",
+                    type: "textarea",
+                    full: true,
+                  },
+                  {
+                    name: "is_published",
+                    type: "checkbox",
+                    checkboxLabel: "Показывать на сайте",
+                    full: true,
+                  },
+                ]}
+              />
+            )}
+
+            {activeSection === "reviews" && (
+              <SimpleCollectionManager
+                tableName="reviews"
+                title="отзыв"
+                description="Добавляй отзывы учеников и родителей."
+                emptyItem={{
+                  name: "",
+                  text: "",
+                  rating: 5,
+                  position: 0,
+                  is_published: true,
+                }}
+                fields={[
+                  {
+                    name: "name",
+                    label: "Имя / подпись",
+                    placeholder: "Например: Родитель ученика",
+                  },
+                  {
+                    name: "rating",
+                    label: "Оценка",
+                    type: "number",
+                  },
+                  {
+                    name: "position",
+                    label: "Позиция",
+                    type: "number",
+                  },
+                  {
+                    name: "text",
+                    label: "Текст отзыва",
+                    type: "textarea",
+                    full: true,
+                  },
+                  {
+                    name: "is_published",
+                    type: "checkbox",
+                    checkboxLabel: "Показывать на сайте",
+                    full: true,
+                  },
+                ]}
+              />
+            )}
+
+            {activeSection === "gallery" && (
               <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
-                <h3 className="text-2xl font-bold">Раздел в разработке</h3>
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+                  <Award className="h-7 w-7" />
+                </div>
+
+                <h3 className="text-2xl font-bold">Галерея будет следующим этапом</h3>
+
                 <p className="mt-3 text-slate-300">
-                  Сейчас мы подключили первый рабочий раздел — учебные
-                  материалы. Остальные разделы добавим следующим этапом.
+                  Сейчас полностью работают профиль, направления, материалы,
+                  достижения, отзывы и контакты. Галерею с загрузкой фото через
+                  Supabase Storage подключим отдельно, чтобы не сломать текущую
+                  стабильную версию.
                 </p>
               </div>
             )}
