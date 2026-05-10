@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   BookOpen,
@@ -11,39 +12,47 @@ import {
   Trophy,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import MaterialsManager from "../components/MaterialsManager";
 
 const adminSections = [
   {
+    key: "main",
     icon: <Settings />,
     title: "Основная информация",
     text: "ФИО, описание, стаж, главный текст на сайте.",
   },
   {
+    key: "services",
     icon: <BriefcaseBusiness />,
     title: "Направления работы",
     text: "Химия, биология, подготовка к экзаменам и другие услуги.",
   },
   {
+    key: "materials",
     icon: <BookOpen />,
     title: "Учебные материалы",
     text: "Конспекты, таблицы, схемы, ссылки и PDF-файлы.",
   },
   {
+    key: "achievements",
     icon: <Trophy />,
     title: "Достижения",
     text: "Сертификаты, курсы, конкурсы, результаты учеников.",
   },
   {
+    key: "reviews",
     icon: <MessageSquare />,
     title: "Отзывы",
     text: "Отзывы учеников и родителей.",
   },
   {
+    key: "gallery",
     icon: <Image />,
     title: "Галерея",
     text: "Фото кабинета, уроков, мероприятий и материалов.",
   },
   {
+    key: "contacts",
     icon: <Phone />,
     title: "Контакты",
     text: "Телефон, email, Telegram, WhatsApp и город.",
@@ -52,16 +61,21 @@ const adminSections = [
 
 function AdminDashboard() {
   const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState("materials");
 
   async function handleLogout() {
     await supabase.auth.signOut();
     navigate("/login");
   }
 
+  const selectedSection = adminSections.find(
+    (section) => section.key === activeSection
+  );
+
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <header className="border-b border-white/10 bg-slate-950/80 px-6 py-5 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300/15 text-cyan-200">
               <LayoutDashboard className="h-6 w-6" />
@@ -93,37 +107,57 @@ function AdminDashboard() {
       </header>
 
       <section className="px-6 py-10">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-10 rounded-[2rem] border border-white/10 bg-gradient-to-br from-cyan-300/10 to-emerald-300/10 p-8 backdrop-blur-xl">
-            <h2 className="text-3xl font-black">Панель управления</h2>
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[320px_1fr]">
+          <aside className="h-fit rounded-[2rem] border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+            <div className="mb-4 px-3">
+              <h2 className="text-lg font-bold">Разделы</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                Выбери, что нужно редактировать.
+              </p>
+            </div>
 
-            <p className="mt-3 max-w-2xl text-slate-300">
-              Здесь будет возможность редактировать сайт без кода: добавлять
-              материалы, менять контакты, отзывы, услуги и фотографии.
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-3">
-            {adminSections.map((section) => (
-              <div
-                key={section.title}
-                className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition hover:border-cyan-300/30 hover:bg-white/10"
-              >
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
-                  {section.icon}
-                </div>
-
-                <h3 className="text-xl font-bold">{section.title}</h3>
-
-                <p className="mt-3 text-sm leading-7 text-slate-300">
-                  {section.text}
-                </p>
-
-                <button className="mt-6 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
-                  Открыть раздел
+            <div className="space-y-2">
+              {adminSections.map((section) => (
+                <button
+                  key={section.key}
+                  onClick={() => setActiveSection(section.key)}
+                  className={
+                    activeSection === section.key
+                      ? "flex w-full items-center gap-3 rounded-2xl bg-cyan-300 px-4 py-3 text-left font-semibold text-slate-950"
+                      : "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-300 transition hover:bg-white/10 hover:text-white"
+                  }
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
+                    {section.icon}
+                  </span>
+                  <span>{section.title}</span>
                 </button>
+              ))}
+            </div>
+          </aside>
+
+          <div className="space-y-8">
+            <div className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-cyan-300/10 to-emerald-300/10 p-8 backdrop-blur-xl">
+              <h2 className="text-3xl font-black">
+                {selectedSection?.title}
+              </h2>
+
+              <p className="mt-3 max-w-2xl text-slate-300">
+                {selectedSection?.text}
+              </p>
+            </div>
+
+            {activeSection === "materials" ? (
+              <MaterialsManager />
+            ) : (
+              <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+                <h3 className="text-2xl font-bold">Раздел в разработке</h3>
+                <p className="mt-3 text-slate-300">
+                  Сейчас мы подключили первый рабочий раздел — учебные
+                  материалы. Остальные разделы добавим следующим этапом.
+                </p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>
