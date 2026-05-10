@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { supabase } from "../lib/supabase";
 import {
   Atom,
   Dna,
@@ -47,24 +49,27 @@ const advantages = [
   "Практические примеры из жизни и науки",
 ];
 
-const materials = [
+const defaultMaterials = [
   {
     subject: "Химия",
     title: "Строение атома",
     grade: "8 класс",
-    description: "Краткий конспект с основными понятиями и схемой строения атома.",
+    description:
+      "Краткий конспект с основными понятиями и схемой строения атома.",
   },
   {
     subject: "Биология",
     title: "Строение клетки",
     grade: "7 класс",
-    description: "Материал по органоидам клетки, их функциям и отличиям клеток.",
+    description:
+      "Материал по органоидам клетки, их функциям и отличиям клеток.",
   },
   {
     subject: "Химия",
     title: "Типы химических реакций",
     grade: "8–9 класс",
-    description: "Таблица с примерами реакций соединения, разложения, замещения и обмена.",
+    description:
+      "Таблица с примерами реакций соединения, разложения, замещения и обмена.",
   },
 ];
 
@@ -86,9 +91,11 @@ function SectionTitle({ badge, title, text }) {
         <Sparkles className="h-4 w-4" />
         {badge}
       </div>
+
       <h2 className="text-3xl font-bold tracking-tight text-white md:text-5xl">
         {title}
       </h2>
+
       <p className="mt-4 text-base leading-7 text-slate-300 md:text-lg">
         {text}
       </p>
@@ -97,6 +104,30 @@ function SectionTitle({ badge, title, text }) {
 }
 
 function Home() {
+  const [siteMaterials, setSiteMaterials] = useState(defaultMaterials);
+  const [materialsLoading, setMaterialsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadPublishedMaterials() {
+      const { data, error } = await supabase
+        .from("materials")
+        .select(
+          "id, title, subject, grade, description, link_url, is_published, created_at"
+        )
+        .eq("is_published", true)
+        .order("created_at", { ascending: false })
+        .limit(6);
+
+      if (!error && data && data.length > 0) {
+        setSiteMaterials(data);
+      }
+
+      setMaterialsLoading(false);
+    }
+
+    loadPublishedMaterials();
+  }, []);
+
   return (
     <main className="min-h-screen overflow-hidden bg-slate-950 text-white">
       <div className="pointer-events-none fixed inset-0 z-0">
@@ -111,6 +142,7 @@ function Home() {
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/15 ring-1 ring-cyan-300/30">
               <Atom className="h-6 w-6 text-cyan-200" />
             </div>
+
             <div>
               <p className="text-sm text-slate-400">Учитель</p>
               <p className="font-semibold text-white">Химия & Биология</p>
@@ -118,10 +150,18 @@ function Home() {
           </a>
 
           <nav className="hidden items-center gap-7 text-sm text-slate-300 md:flex">
-            <a href="#about" className="hover:text-cyan-200">Обо мне</a>
-            <a href="#services" className="hover:text-cyan-200">Направления</a>
-            <a href="#materials" className="hover:text-cyan-200">Материалы</a>
-            <a href="#contacts" className="hover:text-cyan-200">Контакты</a>
+            <a href="#about" className="hover:text-cyan-200">
+              Обо мне
+            </a>
+            <a href="#services" className="hover:text-cyan-200">
+              Направления
+            </a>
+            <a href="#materials" className="hover:text-cyan-200">
+              Материалы
+            </a>
+            <a href="#contacts" className="hover:text-cyan-200">
+              Контакты
+            </a>
           </nav>
 
           <a
@@ -153,8 +193,8 @@ function Home() {
             </h1>
 
             <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">
-              Помогаю ученикам понимать сложные темы простым языком,
-              готовиться к урокам, контрольным, олимпиадам и экзаменам.
+              Помогаю ученикам понимать сложные темы простым языком, готовиться
+              к урокам, контрольным, олимпиадам и экзаменам.
             </p>
 
             <div className="mt-9 flex flex-col gap-4 sm:flex-row">
@@ -164,6 +204,7 @@ function Home() {
               >
                 Записаться на занятие
               </a>
+
               <a
                 href="#materials"
                 className="rounded-full border border-white/15 bg-white/5 px-7 py-4 text-center font-bold text-white backdrop-blur transition hover:bg-white/10"
@@ -172,15 +213,17 @@ function Home() {
               </a>
             </div>
 
-            <div className="mt-10 grid grid-cols-3 gap-4 max-w-xl">
+            <div className="mt-10 grid max-w-xl grid-cols-3 gap-4">
               <div className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
                 <p className="text-3xl font-black text-cyan-200">5+</p>
                 <p className="text-sm text-slate-400">лет опыта</p>
               </div>
+
               <div className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
                 <p className="text-3xl font-black text-emerald-200">100+</p>
                 <p className="text-sm text-slate-400">материалов</p>
               </div>
+
               <div className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
                 <p className="text-3xl font-black text-blue-200">24/7</p>
                 <p className="text-sm text-slate-400">доступ к сайту</p>
@@ -198,6 +241,7 @@ function Home() {
               <div className="absolute -right-8 -top-8 rounded-3xl bg-cyan-300 p-5 text-slate-950 shadow-xl">
                 <Atom className="h-10 w-10" />
               </div>
+
               <div className="absolute -bottom-8 -left-8 rounded-3xl bg-emerald-300 p-5 text-slate-950 shadow-xl">
                 <Dna className="h-10 w-10" />
               </div>
@@ -208,6 +252,7 @@ function Home() {
                     <div className="rounded-2xl bg-cyan-300/10 p-4">
                       <Beaker className="h-9 w-9 text-cyan-200" />
                     </div>
+
                     <div className="rounded-full border border-emerald-300/20 px-4 py-2 text-sm text-emerald-200">
                       Science Lab
                     </div>
@@ -216,9 +261,11 @@ function Home() {
                   <h3 className="text-3xl font-black">
                     Наука может быть понятной
                   </h3>
+
                   <p className="mt-4 text-slate-300">
                     Химия и биология становятся интереснее, когда ученик видит
-                    связь между формулами, клетками, реакциями и реальной жизнью.
+                    связь между формулами, клетками, реакциями и реальной
+                    жизнью.
                   </p>
                 </div>
 
@@ -228,6 +275,7 @@ function Home() {
                     <p className="font-semibold">Опыты</p>
                     <p className="text-sm text-slate-400">реакции и формулы</p>
                   </div>
+
                   <div className="rounded-3xl bg-white/5 p-5">
                     <Microscope className="mb-3 h-7 w-7 text-emerald-200" />
                     <p className="font-semibold">Биология</p>
@@ -251,15 +299,17 @@ function Home() {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
               <h3 className="text-2xl font-bold">Мой подход</h3>
+
               <p className="mt-4 leading-8 text-slate-300">
                 Я объясняю химию и биологию через схемы, примеры, визуальные
-                образы и практические задания. Для каждого ученика подбираю
-                темп и формат занятий, чтобы материал был понятным и полезным.
+                образы и практические задания. Для каждого ученика подбираю темп
+                и формат занятий, чтобы материал был понятным и полезным.
               </p>
             </div>
 
             <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
               <h3 className="text-2xl font-bold">Что получает ученик</h3>
+
               <div className="mt-5 space-y-4">
                 {advantages.map((item) => (
                   <div key={item} className="flex gap-3">
@@ -291,7 +341,9 @@ function Home() {
                 <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
                   {service.icon}
                 </div>
+
                 <h3 className="text-xl font-bold">{service.title}</h3>
+
                 <p className="mt-3 text-sm leading-7 text-slate-300">
                   {service.text}
                 </p>
@@ -306,28 +358,55 @@ function Home() {
           <SectionTitle
             badge="Материалы"
             title="Полезные учебные материалы"
-            text="Позже здесь будут материалы из базы данных Supabase, которые можно добавлять и удалять через админку."
+            text="Материалы добавляются через админ-панель и автоматически появляются на сайте."
           />
 
+          {materialsLoading && (
+            <p className="mb-6 text-center text-slate-400">
+              Загружаем материалы...
+            </p>
+          )}
+
           <div className="grid gap-6 md:grid-cols-3">
-            {materials.map((item) => (
+            {siteMaterials.map((item) => (
               <div
-                key={item.title}
+                key={item.id || item.title}
                 className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur-xl"
               >
-                <div className="mb-5 flex items-center justify-between">
+                <div className="mb-5 flex items-center justify-between gap-4">
                   <span className="rounded-full bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">
                     {item.subject}
                   </span>
-                  <span className="text-sm text-slate-400">{item.grade}</span>
+
+                  {item.grade && (
+                    <span className="text-sm text-slate-400">
+                      {item.grade}
+                    </span>
+                  )}
                 </div>
+
                 <h3 className="text-2xl font-bold">{item.title}</h3>
-                <p className="mt-4 leading-7 text-slate-300">
-                  {item.description}
-                </p>
-                <button className="mt-6 rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
-                  Подробнее
-                </button>
+
+                {item.description && (
+                  <p className="mt-4 leading-7 text-slate-300">
+                    {item.description}
+                  </p>
+                )}
+
+                {item.link_url ? (
+                  <a
+                    href={item.link_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-6 inline-block rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                  >
+                    Открыть материал
+                  </a>
+                ) : (
+                  <span className="mt-6 inline-block rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-slate-400">
+                    Материал без ссылки
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -353,7 +432,9 @@ function Home() {
                     <Star key={star} className="h-5 w-5 fill-current" />
                   ))}
                 </div>
+
                 <p className="leading-8 text-slate-300">“{review.text}”</p>
+
                 <p className="mt-5 font-bold text-white">{review.name}</p>
               </div>
             ))}
@@ -370,12 +451,14 @@ function Home() {
                   <MessageCircle className="h-4 w-4" />
                   Контакты
                 </div>
+
                 <h2 className="text-3xl font-black md:text-5xl">
                   Запишитесь на занятие или задайте вопрос
                 </h2>
+
                 <p className="mt-5 leading-8 text-slate-300">
-                  Напишите удобным способом, и мы обсудим цель занятий,
-                  уровень подготовки и подходящий формат обучения.
+                  Напишите удобным способом, и мы обсудим цель занятий, уровень
+                  подготовки и подходящий формат обучения.
                 </p>
               </div>
 
@@ -387,6 +470,7 @@ function Home() {
                   <Phone className="h-6 w-6 text-cyan-200" />
                   <span>+7 999 999-99-99</span>
                 </a>
+
                 <a
                   href="mailto:teacher@example.com"
                   className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 transition hover:bg-white/10"
@@ -394,10 +478,12 @@ function Home() {
                   <Mail className="h-6 w-6 text-cyan-200" />
                   <span>teacher@example.com</span>
                 </a>
+
                 <div className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-5">
                   <MapPin className="h-6 w-6 text-cyan-200" />
                   <span>Ваш город / онлайн-занятия</span>
                 </div>
+
                 <a
                   href="https://t.me/"
                   className="block rounded-full bg-cyan-300 px-7 py-4 text-center font-bold text-slate-950 transition hover:bg-cyan-200"
@@ -413,7 +499,7 @@ function Home() {
       <footer className="relative z-10 border-t border-white/10 px-6 py-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-sm text-slate-400 md:flex-row">
           <p>© 2026 Учитель химии и биологии</p>
-          <p>Сайт-визитка с будущей админ-панелью</p>
+          <p>Сайт-визитка с админ-панелью</p>
         </div>
       </footer>
     </main>
