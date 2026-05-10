@@ -1,26 +1,37 @@
 import { useEffect, useState } from "react";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, UserRound } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
-const emptyProfile = {
-  teacher_name: "",
-  teacher_title: "",
+const defaultProfile = {
+  full_name: "",
+  profession: "",
+
   hero_badge: "",
+  hero_title: "",
+  hero_highlight: "",
   hero_description: "",
-  about_title: "",
-  about_description: "",
-  approach_title: "",
-  approach_text: "",
+
   experience_value: "",
   experience_label: "",
+
   materials_value: "",
   materials_label: "",
+
   access_value: "",
   access_label: "",
+
+  about_title: "",
+  about_text: "",
+
+  approach_title: "",
+  approach_text: "",
+
+  science_card_title: "",
+  science_card_text: "",
 };
 
 function ProfileManager() {
-  const [profile, setProfile] = useState(emptyProfile);
+  const [profile, setProfile] = useState(defaultProfile);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -29,8 +40,8 @@ function ProfileManager() {
 
   async function loadProfile() {
     setLoading(true);
-    setErrorText("");
     setSuccessText("");
+    setErrorText("");
 
     const { data, error } = await supabase
       .from("site_profile")
@@ -41,26 +52,37 @@ function ProfileManager() {
     setLoading(false);
 
     if (error) {
-      setErrorText("Не удалось загрузить профиль.");
+      setErrorText("Не удалось загрузить основную информацию.");
       return;
     }
 
     if (data) {
       setProfile({
-        teacher_name: data.teacher_name || "",
-        teacher_title: data.teacher_title || "",
+        full_name: data.full_name || "",
+        profession: data.profession || "",
+
         hero_badge: data.hero_badge || "",
+        hero_title: data.hero_title || "",
+        hero_highlight: data.hero_highlight || "",
         hero_description: data.hero_description || "",
-        about_title: data.about_title || "",
-        about_description: data.about_description || "",
-        approach_title: data.approach_title || "",
-        approach_text: data.approach_text || "",
+
         experience_value: data.experience_value || "",
         experience_label: data.experience_label || "",
+
         materials_value: data.materials_value || "",
         materials_label: data.materials_label || "",
+
         access_value: data.access_value || "",
         access_label: data.access_label || "",
+
+        about_title: data.about_title || "",
+        about_text: data.about_text || "",
+
+        approach_title: data.approach_title || "",
+        approach_text: data.approach_text || "",
+
+        science_card_title: data.science_card_title || "",
+        science_card_text: data.science_card_text || "",
       });
     }
   }
@@ -80,12 +102,37 @@ function ProfileManager() {
     event.preventDefault();
 
     setSaving(true);
-    setErrorText("");
     setSuccessText("");
+    setErrorText("");
 
     const payload = {
       id: "main",
-      ...profile,
+      full_name: profile.full_name.trim(),
+      profession: profile.profession.trim(),
+
+      hero_badge: profile.hero_badge.trim(),
+      hero_title: profile.hero_title.trim(),
+      hero_highlight: profile.hero_highlight.trim(),
+      hero_description: profile.hero_description.trim(),
+
+      experience_value: profile.experience_value.trim(),
+      experience_label: profile.experience_label.trim(),
+
+      materials_value: profile.materials_value.trim(),
+      materials_label: profile.materials_label.trim(),
+
+      access_value: profile.access_value.trim(),
+      access_label: profile.access_label.trim(),
+
+      about_title: profile.about_title.trim(),
+      about_text: profile.about_text.trim(),
+
+      approach_title: profile.approach_title.trim(),
+      approach_text: profile.approach_text.trim(),
+
+      science_card_title: profile.science_card_title.trim(),
+      science_card_text: profile.science_card_text.trim(),
+
       updated_at: new Date().toISOString(),
     };
 
@@ -96,11 +143,11 @@ function ProfileManager() {
     setSaving(false);
 
     if (error) {
-      setErrorText("Не удалось сохранить профиль.");
+      setErrorText("Не удалось сохранить основную информацию.");
       return;
     }
 
-    setSuccessText("Профиль успешно сохранен.");
+    setSuccessText("Основная информация успешно сохранена.");
     await loadProfile();
   }
 
@@ -109,240 +156,308 @@ function ProfileManager() {
       <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
         <div className="flex items-center gap-3 text-slate-300">
           <Loader2 className="h-5 w-5 animate-spin" />
-          Загружаем профиль...
+          Загружаем основную информацию...
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-      <div className="mb-6">
-        <h2 className="text-2xl font-black">Основная информация</h2>
-        <p className="mt-2 text-slate-400">
-          Эти данные отображаются на главной странице сайта.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-300">ФИО</span>
-          <input
-            type="text"
-            value={profile.teacher_name}
-            onChange={(event) =>
-              updateProfile("teacher_name", event.target.value)
-            }
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-300">Должность</span>
-          <input
-            type="text"
-            value={profile.teacher_title}
-            onChange={(event) =>
-              updateProfile("teacher_title", event.target.value)
-            }
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        <label className="block md:col-span-2">
-          <span className="mb-2 block text-sm text-slate-300">
-            Бейдж на первом экране
-          </span>
-          <input
-            type="text"
-            value={profile.hero_badge}
-            onChange={(event) => updateProfile("hero_badge", event.target.value)}
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        <label className="block md:col-span-2">
-          <span className="mb-2 block text-sm text-slate-300">
-            Описание на первом экране
-          </span>
-          <textarea
-            rows="4"
-            value={profile.hero_description}
-            onChange={(event) =>
-              updateProfile("hero_description", event.target.value)
-            }
-            className="w-full resize-none rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-300">
-            Заголовок блока “Обо мне”
-          </span>
-          <input
-            type="text"
-            value={profile.about_title}
-            onChange={(event) =>
-              updateProfile("about_title", event.target.value)
-            }
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-300">
-            Заголовок карточки подхода
-          </span>
-          <input
-            type="text"
-            value={profile.approach_title}
-            onChange={(event) =>
-              updateProfile("approach_title", event.target.value)
-            }
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        <label className="block md:col-span-2">
-          <span className="mb-2 block text-sm text-slate-300">
-            Описание блока “Обо мне”
-          </span>
-          <textarea
-            rows="3"
-            value={profile.about_description}
-            onChange={(event) =>
-              updateProfile("about_description", event.target.value)
-            }
-            className="w-full resize-none rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        <label className="block md:col-span-2">
-          <span className="mb-2 block text-sm text-slate-300">
-            Текст подхода
-          </span>
-          <textarea
-            rows="4"
-            value={profile.approach_text}
-            onChange={(event) =>
-              updateProfile("approach_text", event.target.value)
-            }
-            className="w-full resize-none rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-300">Опыт — число</span>
-          <input
-            type="text"
-            value={profile.experience_value}
-            onChange={(event) =>
-              updateProfile("experience_value", event.target.value)
-            }
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-300">
-            Опыт — подпись
-          </span>
-          <input
-            type="text"
-            value={profile.experience_label}
-            onChange={(event) =>
-              updateProfile("experience_label", event.target.value)
-            }
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-300">
-            Материалы — число
-          </span>
-          <input
-            type="text"
-            value={profile.materials_value}
-            onChange={(event) =>
-              updateProfile("materials_value", event.target.value)
-            }
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-300">
-            Материалы — подпись
-          </span>
-          <input
-            type="text"
-            value={profile.materials_label}
-            onChange={(event) =>
-              updateProfile("materials_label", event.target.value)
-            }
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-300">
-            Доступ — число
-          </span>
-          <input
-            type="text"
-            value={profile.access_value}
-            onChange={(event) =>
-              updateProfile("access_value", event.target.value)
-            }
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm text-slate-300">
-            Доступ — подпись
-          </span>
-          <input
-            type="text"
-            value={profile.access_label}
-            onChange={(event) =>
-              updateProfile("access_label", event.target.value)
-            }
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none"
-          />
-        </label>
-
-        {successText && (
-          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200 md:col-span-2">
-            {successText}
+    <div className="space-y-8">
+      <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="mb-6 flex items-start gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+            <UserRound className="h-7 w-7" />
           </div>
-        )}
 
-        {errorText && (
-          <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200 md:col-span-2">
-            {errorText}
+          <div>
+            <h2 className="text-2xl font-black">Основная информация</h2>
+            <p className="mt-2 text-slate-400">
+              Эти данные отображаются на главном экране, в блоке “Обо мне” и в
+              карточке про науку.
+            </p>
           </div>
-        )}
+        </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan-300 px-6 py-4 font-bold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-2"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Сохраняем...
-            </>
-          ) : (
-            <>
-              <Save className="h-5 w-5" />
-              Сохранить профиль
-            </>
+        <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
+          <label className="block">
+            <span className="mb-2 block text-sm text-slate-300">ФИО</span>
+            <input
+              type="text"
+              value={profile.full_name}
+              onChange={(event) =>
+                updateProfile("full_name", event.target.value)
+              }
+              placeholder="Алиосманова Кристина"
+              className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-sm text-slate-300">
+              Профессия
+            </span>
+            <input
+              type="text"
+              value={profile.profession}
+              onChange={(event) =>
+                updateProfile("profession", event.target.value)
+              }
+              placeholder="Учитель химии и биологии"
+              className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+            />
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className="mb-2 block text-sm text-slate-300">
+              Бейдж первого экрана
+            </span>
+            <input
+              type="text"
+              value={profile.hero_badge}
+              onChange={(event) =>
+                updateProfile("hero_badge", event.target.value)
+              }
+              placeholder="Современное обучение химии и биологии"
+              className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-sm text-slate-300">
+              Заголовок
+            </span>
+            <input
+              type="text"
+              value={profile.hero_title}
+              onChange={(event) =>
+                updateProfile("hero_title", event.target.value)
+              }
+              placeholder="Учитель"
+              className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-sm text-slate-300">
+              Выделенный текст
+            </span>
+            <input
+              type="text"
+              value={profile.hero_highlight}
+              onChange={(event) =>
+                updateProfile("hero_highlight", event.target.value)
+              }
+              placeholder="химии и биологии"
+              className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+            />
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className="mb-2 block text-sm text-slate-300">
+              Описание первого экрана
+            </span>
+            <textarea
+              value={profile.hero_description}
+              onChange={(event) =>
+                updateProfile("hero_description", event.target.value)
+              }
+              placeholder="Помогаю ученикам понимать сложные темы..."
+              rows="4"
+              className="w-full resize-none rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+            />
+          </label>
+
+          <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 md:col-span-2">
+            <h3 className="mb-4 text-lg font-bold">Цифры на первом экране</h3>
+
+            <div className="grid gap-5 md:grid-cols-3">
+              <div className="grid gap-3">
+                <input
+                  type="text"
+                  value={profile.experience_value}
+                  onChange={(event) =>
+                    updateProfile("experience_value", event.target.value)
+                  }
+                  placeholder="5+"
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+                />
+
+                <input
+                  type="text"
+                  value={profile.experience_label}
+                  onChange={(event) =>
+                    updateProfile("experience_label", event.target.value)
+                  }
+                  placeholder="лет опыта"
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+                />
+              </div>
+
+              <div className="grid gap-3">
+                <input
+                  type="text"
+                  value={profile.materials_value}
+                  onChange={(event) =>
+                    updateProfile("materials_value", event.target.value)
+                  }
+                  placeholder="100+"
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+                />
+
+                <input
+                  type="text"
+                  value={profile.materials_label}
+                  onChange={(event) =>
+                    updateProfile("materials_label", event.target.value)
+                  }
+                  placeholder="материалов"
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+                />
+              </div>
+
+              <div className="grid gap-3">
+                <input
+                  type="text"
+                  value={profile.access_value}
+                  onChange={(event) =>
+                    updateProfile("access_value", event.target.value)
+                  }
+                  placeholder="24/7"
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+                />
+
+                <input
+                  type="text"
+                  value={profile.access_label}
+                  onChange={(event) =>
+                    updateProfile("access_label", event.target.value)
+                  }
+                  placeholder="доступ к сайту"
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+                />
+              </div>
+            </div>
+          </div>
+
+          <label className="block md:col-span-2">
+            <span className="mb-2 block text-sm text-slate-300">
+              Заголовок блока “Обо мне”
+            </span>
+            <input
+              type="text"
+              value={profile.about_title}
+              onChange={(event) =>
+                updateProfile("about_title", event.target.value)
+              }
+              placeholder="Обучение с понятной структурой"
+              className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+            />
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className="mb-2 block text-sm text-slate-300">
+              Текст блока “Обо мне”
+            </span>
+            <textarea
+              value={profile.about_text}
+              onChange={(event) =>
+                updateProfile("about_text", event.target.value)
+              }
+              rows="4"
+              className="w-full resize-none rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-sm text-slate-300">
+              Заголовок “Мой подход”
+            </span>
+            <input
+              type="text"
+              value={profile.approach_title}
+              onChange={(event) =>
+                updateProfile("approach_title", event.target.value)
+              }
+              placeholder="Мой подход"
+              className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-sm text-slate-300">
+              Заголовок научной карточки
+            </span>
+            <input
+              type="text"
+              value={profile.science_card_title}
+              onChange={(event) =>
+                updateProfile("science_card_title", event.target.value)
+              }
+              placeholder="Наука может быть понятной"
+              className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+            />
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className="mb-2 block text-sm text-slate-300">
+              Текст “Мой подход”
+            </span>
+            <textarea
+              value={profile.approach_text}
+              onChange={(event) =>
+                updateProfile("approach_text", event.target.value)
+              }
+              rows="4"
+              className="w-full resize-none rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+            />
+          </label>
+
+          <label className="block md:col-span-2">
+            <span className="mb-2 block text-sm text-slate-300">
+              Текст научной карточки
+            </span>
+            <textarea
+              value={profile.science_card_text}
+              onChange={(event) =>
+                updateProfile("science_card_text", event.target.value)
+              }
+              rows="4"
+              className="w-full resize-none rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
+            />
+          </label>
+
+          {successText && (
+            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200 md:col-span-2">
+              {successText}
+            </div>
           )}
-        </button>
-      </form>
+
+          {errorText && (
+            <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200 md:col-span-2">
+              {errorText}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan-300 px-6 py-4 font-bold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-2"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Сохраняем...
+              </>
+            ) : (
+              <>
+                <Save className="h-5 w-5" />
+                Сохранить основную информацию
+              </>
+            )}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

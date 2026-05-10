@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import {
   Atom,
-  Award,
   Beaker,
   BookOpen,
   CheckCircle2,
@@ -44,107 +43,6 @@ const defaultProfile = {
   science_card_text:
     "Химия и биология становятся интереснее, когда ученик видит связь между формулами, клетками, реакциями и реальной жизнью.",
 };
-
-const defaultAdvantages = [
-  "Индивидуальный подход к каждому ученику",
-  "Понятное объяснение сложных тем",
-  "Современные материалы и наглядные схемы",
-  "Подготовка к контрольным, олимпиадам и экзаменам",
-  "Практические примеры из жизни и науки",
-];
-
-const defaultServices = [
-  {
-    id: "service-1",
-    icon: "flask",
-    title: "Химия",
-    text: "Объяснение сложных тем простым языком: атомы, реакции, растворы, органическая химия.",
-  },
-  {
-    id: "service-2",
-    icon: "dna",
-    title: "Биология",
-    text: "Клетка, организм человека, генетика, экология и подготовка к контрольным работам.",
-  },
-  {
-    id: "service-3",
-    icon: "graduation",
-    title: "Подготовка к экзаменам",
-    text: "Системная подготовка, повторение тем, тесты, разбор типичных ошибок.",
-  },
-  {
-    id: "service-4",
-    icon: "book",
-    title: "Учебные материалы",
-    text: "Конспекты, таблицы, схемы, задания и полезные материалы для учеников.",
-  },
-];
-
-const defaultMaterials = [
-  {
-    id: "material-1",
-    subject: "Химия",
-    title: "Строение атома",
-    grade: "8 класс",
-    description:
-      "Краткий конспект с основными понятиями и схемой строения атома.",
-    link_url: "",
-  },
-  {
-    id: "material-2",
-    subject: "Биология",
-    title: "Строение клетки",
-    grade: "7 класс",
-    description:
-      "Материал по органоидам клетки, их функциям и отличиям клеток.",
-    link_url: "",
-  },
-  {
-    id: "material-3",
-    subject: "Химия",
-    title: "Типы химических реакций",
-    grade: "8–9 класс",
-    description:
-      "Таблица с примерами реакций соединения, разложения, замещения и обмена.",
-    link_url: "",
-  },
-];
-
-const defaultAchievements = [
-  {
-    id: "achievement-1",
-    title: "Современные методики обучения",
-    text: "Использование наглядных схем, интерактивных заданий и индивидуального подхода.",
-    year: "2026",
-  },
-  {
-    id: "achievement-2",
-    title: "Подготовка учебных материалов",
-    text: "Авторские конспекты, таблицы и задания для закрепления тем по химии и биологии.",
-    year: "2026",
-  },
-  {
-    id: "achievement-3",
-    title: "Проектная деятельность",
-    text: "Помощь ученикам в подготовке учебных проектов, докладов и исследовательских работ.",
-    year: "2026",
-  },
-];
-
-const defaultReviews = [
-  {
-    id: "review-1",
-    name: "Ученик 9 класса",
-    text: "Темы стали понятнее, особенно химические реакции и задачи. Очень помогли схемы и разбор ошибок.",
-    rating: 5,
-  },
-  {
-    id: "review-2",
-    name: "Родитель ученика",
-    text: "Ребенок стал увереннее на уроках, улучшились оценки и появился интерес к предмету.",
-    rating: 5,
-  },
-];
 
 const defaultContacts = {
   phone: "+7 999 999-99-99",
@@ -197,27 +95,25 @@ function SectionTitle({ badge, title, text }) {
 
 function Home() {
   const [profile, setProfile] = useState(defaultProfile);
-  const [advantages, setAdvantages] = useState(defaultAdvantages);
-  const [services, setServices] = useState(defaultServices);
-  const [materials, setMaterials] = useState(defaultMaterials);
-  const [achievements, setAchievements] = useState(defaultAchievements);
-  const [reviews, setReviews] = useState(defaultReviews);
+  const [advantages, setAdvantages] = useState([]);
+  const [services, setServices] = useState([]);
+  const [materials, setMaterials] = useState([]);
+  const [achievements, setAchievements] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [contacts, setContacts] = useState(defaultContacts);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadSiteData() {
-      setLoading(true);
-
+  const loadSiteData = useCallback(async () => {
+    try {
       const [
-        profileResult,
-        advantagesResult,
-        servicesResult,
-        materialsResult,
-        achievementsResult,
-        reviewsResult,
-        contactsResult,
-      ] = await Promise.allSettled([
+        profileResponse,
+        advantagesResponse,
+        servicesResponse,
+        materialsResponse,
+        achievementsResponse,
+        reviewsResponse,
+        contactsResponse,
+      ] = await Promise.all([
         supabase.from("site_profile").select("*").eq("id", "main").maybeSingle(),
 
         supabase
@@ -256,80 +152,116 @@ function Home() {
         supabase.from("contacts").select("*").eq("id", "main").maybeSingle(),
       ]);
 
-      if (
-        profileResult.status === "fulfilled" &&
-        !profileResult.value.error &&
-        profileResult.value.data
-      ) {
+      if (profileResponse.error) {
+        console.error("site_profile error:", profileResponse.error.message);
+      } else if (profileResponse.data) {
         setProfile({
           ...defaultProfile,
-          ...profileResult.value.data,
+          ...profileResponse.data,
         });
       }
 
-      if (
-        advantagesResult.status === "fulfilled" &&
-        !advantagesResult.value.error &&
-        advantagesResult.value.data &&
-        advantagesResult.value.data.length > 0
-      ) {
+      if (advantagesResponse.error) {
+        console.error("advantages error:", advantagesResponse.error.message);
+      } else {
         setAdvantages(
-          advantagesResult.value.data.map((item) => item.text || item.title)
+          (advantagesResponse.data || []).map((item) => item.text || item.title)
         );
       }
 
-      if (
-        servicesResult.status === "fulfilled" &&
-        !servicesResult.value.error &&
-        servicesResult.value.data &&
-        servicesResult.value.data.length > 0
-      ) {
-        setServices(servicesResult.value.data);
+      if (servicesResponse.error) {
+        console.error("services error:", servicesResponse.error.message);
+      } else {
+        setServices(servicesResponse.data || []);
       }
 
-      if (
-        materialsResult.status === "fulfilled" &&
-        !materialsResult.value.error &&
-        materialsResult.value.data &&
-        materialsResult.value.data.length > 0
-      ) {
-        setMaterials(materialsResult.value.data);
+      if (materialsResponse.error) {
+        console.error("materials error:", materialsResponse.error.message);
+      } else {
+        setMaterials(materialsResponse.data || []);
       }
 
-      if (
-        achievementsResult.status === "fulfilled" &&
-        !achievementsResult.value.error &&
-        achievementsResult.value.data &&
-        achievementsResult.value.data.length > 0
-      ) {
-        setAchievements(achievementsResult.value.data);
+      if (achievementsResponse.error) {
+        console.error(
+          "achievements error:",
+          achievementsResponse.error.message
+        );
+      } else {
+        setAchievements(achievementsResponse.data || []);
       }
 
-      if (
-        reviewsResult.status === "fulfilled" &&
-        !reviewsResult.value.error &&
-        reviewsResult.value.data &&
-        reviewsResult.value.data.length > 0
-      ) {
-        setReviews(reviewsResult.value.data);
+      if (reviewsResponse.error) {
+        console.error("reviews error:", reviewsResponse.error.message);
+      } else {
+        setReviews(reviewsResponse.data || []);
       }
 
-      if (
-        contactsResult.status === "fulfilled" &&
-        !contactsResult.value.error &&
-        contactsResult.value.data
-      ) {
+      if (contactsResponse.error) {
+        console.error("contacts error:", contactsResponse.error.message);
+      } else if (contactsResponse.data) {
         setContacts({
           ...defaultContacts,
-          ...contactsResult.value.data,
+          ...contactsResponse.data,
         });
       }
-
+    } catch (error) {
+      console.error("Ошибка загрузки данных сайта:", error);
+    } finally {
       setLoading(false);
     }
-
-    loadSiteData();
   }, []);
+
+  useEffect(() => {
+    loadSiteData();
+
+    const interval = setInterval(() => {
+      loadSiteData();
+    }, 5000);
+
+    const channel = supabase
+      .channel("homepage-live-updates")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "site_profile" },
+        loadSiteData
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "advantages" },
+        loadSiteData
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "services" },
+        loadSiteData
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "materials" },
+        loadSiteData
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "achievements" },
+        loadSiteData
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "reviews" },
+        loadSiteData
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "contacts" },
+        loadSiteData
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [loadSiteData]);
 
   const phoneHref = contacts.phone
     ? `tel:${contacts.phone.replace(/[^\d+]/g, "")}`
@@ -535,12 +467,18 @@ function Home() {
               <h3 className="text-2xl font-bold">Что получает ученик</h3>
 
               <div className="mt-5 space-y-4">
-                {advantages.map((item) => (
-                  <div key={item} className="flex gap-3">
-                    <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-emerald-200" />
-                    <p className="text-slate-300">{item}</p>
-                  </div>
-                ))}
+                {advantages.length > 0 ? (
+                  advantages.map((item) => (
+                    <div key={item} className="flex gap-3">
+                      <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-emerald-200" />
+                      <p className="text-slate-300">{item}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-400">
+                    Преимущества пока не добавлены.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -552,7 +490,7 @@ function Home() {
           <SectionTitle
             badge="Направления"
             title="Чем я могу помочь"
-            text="Направления работы, которые можно будет редактировать через админ-панель."
+            text="Направления работы, которые можно редактировать через админ-панель."
           />
 
           <div className="grid gap-6 md:grid-cols-4">
@@ -691,10 +629,7 @@ function Home() {
                 >
                   <div className="mb-4 flex gap-1 text-yellow-200">
                     {Array.from({ length: rating }).map((_, index) => (
-                      <Star
-                        key={index}
-                        className="h-5 w-5 fill-current"
-                      />
+                      <Star key={index} className="h-5 w-5 fill-current" />
                     ))}
                   </div>
 

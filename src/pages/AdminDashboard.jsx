@@ -4,6 +4,7 @@ import {
   Award,
   BookOpen,
   BriefcaseBusiness,
+  CheckCircle2,
   Image,
   LayoutDashboard,
   LogOut,
@@ -12,27 +13,25 @@ import {
   Settings,
   Trophy,
 } from "lucide-react";
+
 import { supabase } from "../lib/supabase";
 import ProfileManager from "../components/ProfileManager";
 import MaterialsManager from "../components/MaterialsManager";
 import ContactsManager from "../components/ContactsManager";
-import SimpleCollectionManager from "../components/SimpleCollectionManager";
-
-const iconOptions = [
-  { value: "flask", label: "Колба" },
-  { value: "dna", label: "ДНК" },
-  { value: "graduation", label: "Обучение" },
-  { value: "book", label: "Книга" },
-  { value: "microscope", label: "Микроскоп" },
-  { value: "atom", label: "Атом" },
-];
+import CollectionManager from "../components/CollectionManager";
 
 const adminSections = [
   {
     key: "profile",
     icon: <Settings />,
     title: "Основная информация",
-    text: "ФИО, описание, стаж, главный текст на сайте.",
+    text: "ФИО, первый экран, описание, стаж, блок “Обо мне” и научная карточка.",
+  },
+  {
+    key: "advantages",
+    icon: <CheckCircle2 />,
+    title: "Преимущества",
+    text: "Список преимуществ: индивидуальный подход, понятное объяснение, материалы и подготовка.",
   },
   {
     key: "services",
@@ -76,14 +75,70 @@ function AdminDashboard() {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("profile");
 
+  const selectedSection = adminSections.find(
+    (section) => section.key === activeSection
+  );
+
   async function handleLogout() {
     await supabase.auth.signOut();
     navigate("/login");
   }
 
-  const selectedSection = adminSections.find(
-    (section) => section.key === activeSection
-  );
+  function renderActiveSection() {
+    if (activeSection === "profile") {
+      return <ProfileManager />;
+    }
+
+    if (activeSection === "advantages") {
+      return <CollectionManager type="advantages" />;
+    }
+
+    if (activeSection === "services") {
+      return <CollectionManager type="services" />;
+    }
+
+    if (activeSection === "materials") {
+      return <MaterialsManager />;
+    }
+
+    if (activeSection === "achievements") {
+      return <CollectionManager type="achievements" />;
+    }
+
+    if (activeSection === "reviews") {
+      return <CollectionManager type="reviews" />;
+    }
+
+    if (activeSection === "contacts") {
+      return <ContactsManager />;
+    }
+
+    if (activeSection === "gallery") {
+      return (
+        <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+            <Award className="h-7 w-7" />
+          </div>
+
+          <h3 className="text-2xl font-bold">Галерея будет позже</h3>
+
+          <p className="mt-3 text-slate-300">
+            Раздел с загрузкой фотографий добавим отдельным этапом через
+            Supabase Storage.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+        <h3 className="text-2xl font-bold">Раздел не найден</h3>
+        <p className="mt-3 text-slate-300">
+          Выбери другой раздел в меню слева.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -124,6 +179,7 @@ function AdminDashboard() {
           <aside className="h-fit rounded-[2rem] border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
             <div className="mb-4 px-3">
               <h2 className="text-lg font-bold">Разделы</h2>
+
               <p className="mt-1 text-sm text-slate-400">
                 Выбери, что нужно редактировать.
               </p>
@@ -133,6 +189,7 @@ function AdminDashboard() {
               {adminSections.map((section) => (
                 <button
                   key={section.key}
+                  type="button"
                   onClick={() => setActiveSection(section.key)}
                   className={
                     activeSection === section.key
@@ -140,7 +197,13 @@ function AdminDashboard() {
                       : "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-300 transition hover:bg-white/10 hover:text-white"
                   }
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
+                  <span
+                    className={
+                      activeSection === section.key
+                        ? "flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950/10"
+                        : "flex h-9 w-9 items-center justify-center rounded-xl bg-white/10"
+                    }
+                  >
                     {section.icon}
                   </span>
 
@@ -161,161 +224,7 @@ function AdminDashboard() {
               </p>
             </div>
 
-            {activeSection === "profile" && <ProfileManager />}
-
-            {activeSection === "materials" && <MaterialsManager />}
-
-            {activeSection === "contacts" && <ContactsManager />}
-
-            {activeSection === "services" && (
-              <SimpleCollectionManager
-                tableName="services"
-                title="направление работы"
-                description="Добавляй и редактируй направления, которые отображаются на главной странице."
-                emptyItem={{
-                  title: "",
-                  description: "",
-                  icon_name: "flask",
-                  position: 0,
-                  is_published: true,
-                }}
-                fields={[
-                  {
-                    name: "title",
-                    label: "Название",
-                    placeholder: "Например: Химия",
-                  },
-                  {
-                    name: "icon_name",
-                    label: "Иконка",
-                    type: "select",
-                    options: iconOptions,
-                  },
-                  {
-                    name: "position",
-                    label: "Позиция",
-                    type: "number",
-                  },
-                  {
-                    name: "description",
-                    label: "Описание",
-                    type: "textarea",
-                    full: true,
-                  },
-                  {
-                    name: "is_published",
-                    type: "checkbox",
-                    checkboxLabel: "Показывать на сайте",
-                    full: true,
-                  },
-                ]}
-              />
-            )}
-
-            {activeSection === "achievements" && (
-              <SimpleCollectionManager
-                tableName="achievements"
-                title="достижение"
-                description="Добавляй сертификаты, курсы, конкурсы и достижения учеников."
-                emptyItem={{
-                  title: "",
-                  description: "",
-                  year: "",
-                  position: 0,
-                  is_published: true,
-                }}
-                fields={[
-                  {
-                    name: "title",
-                    label: "Название",
-                    placeholder: "Например: Курсы повышения квалификации",
-                  },
-                  {
-                    name: "year",
-                    label: "Год",
-                    placeholder: "2026",
-                  },
-                  {
-                    name: "position",
-                    label: "Позиция",
-                    type: "number",
-                  },
-                  {
-                    name: "description",
-                    label: "Описание",
-                    type: "textarea",
-                    full: true,
-                  },
-                  {
-                    name: "is_published",
-                    type: "checkbox",
-                    checkboxLabel: "Показывать на сайте",
-                    full: true,
-                  },
-                ]}
-              />
-            )}
-
-            {activeSection === "reviews" && (
-              <SimpleCollectionManager
-                tableName="reviews"
-                title="отзыв"
-                description="Добавляй отзывы учеников и родителей."
-                emptyItem={{
-                  name: "",
-                  text: "",
-                  rating: 5,
-                  position: 0,
-                  is_published: true,
-                }}
-                fields={[
-                  {
-                    name: "name",
-                    label: "Имя / подпись",
-                    placeholder: "Например: Родитель ученика",
-                  },
-                  {
-                    name: "rating",
-                    label: "Оценка",
-                    type: "number",
-                  },
-                  {
-                    name: "position",
-                    label: "Позиция",
-                    type: "number",
-                  },
-                  {
-                    name: "text",
-                    label: "Текст отзыва",
-                    type: "textarea",
-                    full: true,
-                  },
-                  {
-                    name: "is_published",
-                    type: "checkbox",
-                    checkboxLabel: "Показывать на сайте",
-                    full: true,
-                  },
-                ]}
-              />
-            )}
-
-            {activeSection === "gallery" && (
-              <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
-                  <Award className="h-7 w-7" />
-                </div>
-
-                <h3 className="text-2xl font-bold">Галерея будет следующим этапом</h3>
-
-                <p className="mt-3 text-slate-300">
-                  Сейчас полностью работают профиль, направления, материалы,
-                  достижения, отзывы и контакты. Галерею с загрузкой фото через
-                  Supabase Storage подключим отдельно, чтобы не сломать текущую
-                  стабильную версию.
-                </p>
-              </div>
-            )}
+            {renderActiveSection()}
           </div>
         </div>
       </section>
