@@ -1,23 +1,27 @@
 import { useCallback, useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import {
+  ArrowUp,
   Atom,
   Beaker,
   BookOpen,
   CheckCircle2,
+  ChevronRight,
   Dna,
   FlaskConical,
   GraduationCap,
-  Image,
+  Image as ImageIcon,
   Mail,
   MapPin,
+  Menu,
   MessageCircle,
   Microscope,
   Phone,
   Sparkles,
   Star,
   Trophy,
+  X,
 } from "lucide-react";
 
 const defaultProfile = {
@@ -55,6 +59,22 @@ const defaultContacts = {
   map_url: "",
 };
 
+const navLinks = [
+  { href: "#about", label: "Обо мне" },
+  { href: "#services", label: "Направления" },
+  { href: "#materials", label: "Материалы" },
+  { href: "#achievements", label: "Достижения" },
+  { href: "#gallery", label: "Галерея" },
+  { href: "#contacts", label: "Контакты" },
+];
+
+const sectionMotion = {
+  initial: { opacity: 0, y: 34 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, amount: 0.16 },
+  transition: { duration: 0.7, ease: "easeOut" },
+};
+
 function getServiceIcon(iconName) {
   const className = "h-7 w-7";
 
@@ -77,7 +97,10 @@ function getServiceIcon(iconName) {
 
 function SectionTitle({ badge, title, text }) {
   return (
-    <div className="mx-auto mb-12 max-w-3xl text-center">
+    <motion.div
+      {...sectionMotion}
+      className="mx-auto mb-12 max-w-3xl text-center"
+    >
       <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">
         <Sparkles className="h-4 w-4" />
         {badge}
@@ -90,6 +113,36 @@ function SectionTitle({ badge, title, text }) {
       <p className="mt-4 text-base leading-7 text-slate-300 md:text-lg">
         {text}
       </p>
+    </motion.div>
+  );
+}
+
+function FloatingScienceDecor() {
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[1] hidden overflow-hidden lg:block">
+      <motion.div
+        animate={{ y: [0, -28, 0], rotate: [0, 12, 0] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute left-[5%] top-[18%] rounded-3xl border border-cyan-300/15 bg-cyan-300/5 p-4 text-cyan-200 backdrop-blur-xl"
+      >
+        <Atom className="h-8 w-8" />
+      </motion.div>
+
+      <motion.div
+        animate={{ y: [0, 34, 0], rotate: [0, -10, 0] }}
+        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute right-[6%] top-[34%] rounded-3xl border border-emerald-300/15 bg-emerald-300/5 p-4 text-emerald-200 backdrop-blur-xl"
+      >
+        <Dna className="h-8 w-8" />
+      </motion.div>
+
+      <motion.div
+        animate={{ y: [0, -22, 0], x: [0, 10, 0] }}
+        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute bottom-[18%] left-[8%] rounded-3xl border border-white/10 bg-white/5 p-4 text-cyan-200 backdrop-blur-xl"
+      >
+        <Microscope className="h-8 w-8" />
+      </motion.div>
     </div>
   );
 }
@@ -104,6 +157,9 @@ function Home() {
   const [gallery, setGallery] = useState([]);
   const [contacts, setContacts] = useState(defaultContacts);
   const [loading, setLoading] = useState(true);
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showBackTop, setShowBackTop] = useState(false);
 
   const loadSiteData = useCallback(async () => {
     try {
@@ -162,59 +218,40 @@ function Home() {
         supabase.from("contacts").select("*").eq("id", "main").maybeSingle(),
       ]);
 
-      if (profileResponse.error) {
-        console.error("site_profile error:", profileResponse.error.message);
-      } else if (profileResponse.data) {
+      if (!profileResponse.error && profileResponse.data) {
         setProfile({
           ...defaultProfile,
           ...profileResponse.data,
         });
       }
 
-      if (advantagesResponse.error) {
-        console.error("advantages error:", advantagesResponse.error.message);
-      } else {
+      if (!advantagesResponse.error) {
         setAdvantages(
           (advantagesResponse.data || []).map((item) => item.text || item.title)
         );
       }
 
-      if (servicesResponse.error) {
-        console.error("services error:", servicesResponse.error.message);
-      } else {
+      if (!servicesResponse.error) {
         setServices(servicesResponse.data || []);
       }
 
-      if (materialsResponse.error) {
-        console.error("materials error:", materialsResponse.error.message);
-      } else {
+      if (!materialsResponse.error) {
         setMaterials(materialsResponse.data || []);
       }
 
-      if (achievementsResponse.error) {
-        console.error(
-          "achievements error:",
-          achievementsResponse.error.message
-        );
-      } else {
+      if (!achievementsResponse.error) {
         setAchievements(achievementsResponse.data || []);
       }
 
-      if (reviewsResponse.error) {
-        console.error("reviews error:", reviewsResponse.error.message);
-      } else {
+      if (!reviewsResponse.error) {
         setReviews(reviewsResponse.data || []);
       }
 
-      if (galleryResponse.error) {
-        console.error("gallery error:", galleryResponse.error.message);
-      } else {
+      if (!galleryResponse.error) {
         setGallery(galleryResponse.data || []);
       }
 
-      if (contactsResponse.error) {
-        console.error("contacts error:", contactsResponse.error.message);
-      } else if (contactsResponse.data) {
+      if (!contactsResponse.error && contactsResponse.data) {
         setContacts({
           ...defaultContacts,
           ...contactsResponse.data,
@@ -284,26 +321,60 @@ function Home() {
     };
   }, [loadSiteData]);
 
+  useEffect(() => {
+    function handleScroll() {
+      setShowBackTop(window.scrollY > 700);
+    }
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = isMenuOpen ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
+
   const phoneHref = contacts.phone
     ? `tel:${contacts.phone.replace(/[^\d+]/g, "")}`
     : "#";
 
   const emailHref = contacts.email ? `mailto:${contacts.email}` : "#";
 
+  function closeMenu() {
+    setIsMenuOpen(false);
+  }
+
+  function scrollTop() {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   return (
     <main className="min-h-screen overflow-hidden bg-slate-950 text-white">
+      <FloatingScienceDecor />
+
       <div className="pointer-events-none fixed inset-0 z-0">
         <div className="absolute left-[-10%] top-[-10%] h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl" />
         <div className="absolute right-[-10%] top-[20%] h-96 w-96 rounded-full bg-emerald-500/20 blur-3xl" />
         <div className="absolute bottom-[-10%] left-[35%] h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />
       </div>
 
-      <header className="relative z-10 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <a href="#" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/15 ring-1 ring-cyan-300/30">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/75 backdrop-blur-2xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <a href="#" className="flex items-center gap-3" onClick={closeMenu}>
+            <motion.div
+              whileHover={{ rotate: 12, scale: 1.05 }}
+              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/15 ring-1 ring-cyan-300/30"
+            >
               <Atom className="h-6 w-6 text-cyan-200" />
-            </div>
+            </motion.div>
 
             <div>
               <p className="text-sm text-slate-400">Учитель</p>
@@ -314,46 +385,116 @@ function Home() {
           </a>
 
           <nav className="hidden items-center gap-7 text-sm text-slate-300 md:flex">
-            <a href="#about" className="hover:text-cyan-200">
-              Обо мне
-            </a>
-            <a href="#services" className="hover:text-cyan-200">
-              Направления
-            </a>
-            <a href="#materials" className="hover:text-cyan-200">
-              Материалы
-            </a>
-            <a href="#achievements" className="hover:text-cyan-200">
-              Достижения
-            </a>
-            <a href="#gallery" className="hover:text-cyan-200">
-              Галерея
-            </a>
-            <a href="#contacts" className="hover:text-cyan-200">
-              Контакты
-            </a>
+            {navLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="relative hover:text-cyan-200"
+              >
+                {link.label}
+              </a>
+            ))}
           </nav>
 
-          <a
-            href="#contacts"
-            className="rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+          <div className="hidden items-center gap-3 md:flex">
+            <a
+              href="#contacts"
+              className="rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+            >
+              Связаться
+            </a>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen(true)}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white md:hidden"
+            aria-label="Открыть меню"
           >
-            Связаться
-          </a>
+            <Menu className="h-6 w-6" />
+          </button>
         </div>
       </header>
+
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-xl md:hidden"
+          >
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 280, damping: 28 }}
+              className="ml-auto flex h-full w-[86%] max-w-sm flex-col border-l border-white/10 bg-slate-950 p-6"
+            >
+              <div className="mb-8 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/15 ring-1 ring-cyan-300/30">
+                    <Atom className="h-6 w-6 text-cyan-200" />
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-slate-400">Меню сайта</p>
+                    <p className="font-semibold text-white">Science CMS</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeMenu}
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5"
+                  aria-label="Закрыть меню"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <nav className="space-y-2">
+                {navLinks.map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    onClick={closeMenu}
+                    className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-slate-200"
+                  >
+                    <span>{link.label}</span>
+                    <ChevronRight className="h-5 w-5 text-cyan-200" />
+                  </a>
+                ))}
+              </nav>
+
+              <a
+                href="#contacts"
+                onClick={closeMenu}
+                className="mt-6 rounded-full bg-cyan-300 px-6 py-4 text-center font-bold text-slate-950"
+              >
+                Связаться
+              </a>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <section className="relative z-10 px-6 py-20 md:py-28">
         <div className="mx-auto grid max-w-7xl items-center gap-12 md:grid-cols-2">
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
+            transition={{ duration: 0.75, ease: "easeOut" }}
           >
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-sm text-emerald-200">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.15, duration: 0.55 }}
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-sm text-emerald-200"
+            >
               <Microscope className="h-4 w-4" />
               {profile.hero_badge}
-            </div>
+            </motion.div>
 
             <h1 className="text-4xl font-black leading-tight tracking-tight md:text-7xl">
               {profile.full_name}{" "}
@@ -370,65 +511,75 @@ function Home() {
             </p>
 
             <div className="mt-9 flex flex-col gap-4 sm:flex-row">
-              <a
+              <motion.a
+                whileHover={{ y: -3, scale: 1.02 }}
                 href="#contacts"
                 className="rounded-full bg-cyan-300 px-7 py-4 text-center font-bold text-slate-950 transition hover:bg-cyan-200"
               >
                 Записаться на занятие
-              </a>
+              </motion.a>
 
-              <a
+              <motion.a
+                whileHover={{ y: -3, scale: 1.02 }}
                 href="#materials"
                 className="rounded-full border border-white/15 bg-white/5 px-7 py-4 text-center font-bold text-white backdrop-blur transition hover:bg-white/10"
               >
                 Посмотреть материалы
-              </a>
+              </motion.a>
             </div>
 
             <div className="mt-10 grid max-w-xl grid-cols-3 gap-4">
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-                <p className="text-3xl font-black text-cyan-200">
-                  {profile.experience_value}
-                </p>
-                <p className="text-sm text-slate-400">
-                  {profile.experience_label}
-                </p>
-              </div>
-
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-                <p className="text-3xl font-black text-emerald-200">
-                  {profile.materials_value}
-                </p>
-                <p className="text-sm text-slate-400">
-                  {profile.materials_label}
-                </p>
-              </div>
-
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-                <p className="text-3xl font-black text-blue-200">
-                  {profile.access_value}
-                </p>
-                <p className="text-sm text-slate-400">
-                  {profile.access_label}
-                </p>
-              </div>
+              {[
+                [profile.experience_value, profile.experience_label],
+                [profile.materials_value, profile.materials_label],
+                [profile.access_value, profile.access_label],
+              ].map(([value, label], index) => (
+                <motion.div
+                  key={label}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 + index * 0.08, duration: 0.5 }}
+                  className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur"
+                >
+                  <p
+                    className={
+                      index === 0
+                        ? "text-3xl font-black text-cyan-200"
+                        : index === 1
+                          ? "text-3xl font-black text-emerald-200"
+                          : "text-3xl font-black text-blue-200"
+                    }
+                  >
+                    {value}
+                  </p>
+                  <p className="text-sm text-slate-400">{label}</p>
+                </motion.div>
+              ))}
             </div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8 }}
+            initial={{ opacity: 0, scale: 0.92, rotate: -2 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            transition={{ duration: 0.85, ease: "easeOut" }}
             className="relative"
           >
             <div className="relative mx-auto aspect-square max-w-lg rounded-[3rem] border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur-xl">
-              <div className="absolute -right-8 -top-8 rounded-3xl bg-cyan-300 p-5 text-slate-950 shadow-xl">
+              <motion.div
+                animate={{ y: [0, -12, 0], rotate: [0, 8, 0] }}
+                transition={{ duration: 5, repeat: Infinity }}
+                className="absolute -right-8 -top-8 rounded-3xl bg-cyan-300 p-5 text-slate-950 shadow-xl"
+              >
                 <Atom className="h-10 w-10" />
-              </div>
+              </motion.div>
 
-              <div className="absolute -bottom-8 -left-8 rounded-3xl bg-emerald-300 p-5 text-slate-950 shadow-xl">
+              <motion.div
+                animate={{ y: [0, 12, 0], rotate: [0, -8, 0] }}
+                transition={{ duration: 5.5, repeat: Infinity }}
+                className="absolute -bottom-8 -left-8 rounded-3xl bg-emerald-300 p-5 text-slate-950 shadow-xl"
+              >
                 <Dna className="h-10 w-10" />
-              </div>
+              </motion.div>
 
               <div className="flex h-full flex-col justify-between rounded-[2.2rem] border border-white/10 bg-slate-900/80 p-8">
                 <div>
@@ -470,7 +621,11 @@ function Home() {
         </div>
       </section>
 
-      <section id="about" className="relative z-10 px-6 py-20">
+      <motion.section
+        id="about"
+        {...sectionMotion}
+        className="relative z-10 px-6 py-20"
+      >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
             badge="Обо мне"
@@ -479,24 +634,37 @@ function Home() {
           />
 
           <div className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+            <motion.div
+              whileHover={{ y: -6 }}
+              className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
+            >
               <h3 className="text-2xl font-bold">{profile.approach_title}</h3>
 
               <p className="mt-4 leading-8 text-slate-300">
                 {profile.approach_text}
               </p>
-            </div>
+            </motion.div>
 
-            <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+            <motion.div
+              whileHover={{ y: -6 }}
+              className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
+            >
               <h3 className="text-2xl font-bold">Что получает ученик</h3>
 
               <div className="mt-5 space-y-4">
                 {advantages.length > 0 ? (
-                  advantages.map((item) => (
-                    <div key={item} className="flex gap-3">
+                  advantages.map((item, index) => (
+                    <motion.div
+                      key={item}
+                      initial={{ opacity: 0, x: -16 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: index * 0.05 }}
+                      className="flex gap-3"
+                    >
                       <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-emerald-200" />
                       <p className="text-slate-300">{item}</p>
-                    </div>
+                    </motion.div>
                   ))
                 ) : (
                   <p className="text-slate-400">
@@ -504,12 +672,16 @@ function Home() {
                   </p>
                 )}
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      <section id="services" className="relative z-10 px-6 py-20">
+      <motion.section
+        id="services"
+        {...sectionMotion}
+        className="relative z-10 px-6 py-20"
+      >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
             badge="Направления"
@@ -518,9 +690,13 @@ function Home() {
           />
 
           <div className="grid gap-6 md:grid-cols-4">
-            {services.map((service) => (
+            {services.map((service, index) => (
               <motion.div
                 key={service.id || service.title}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.08, duration: 0.55 }}
                 whileHover={{ y: -8 }}
                 className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition hover:border-cyan-300/30"
               >
@@ -537,9 +713,13 @@ function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      <section id="materials" className="relative z-10 px-6 py-20">
+      <motion.section
+        id="materials"
+        {...sectionMotion}
+        className="relative z-10 px-6 py-20"
+      >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
             badge="Материалы"
@@ -554,9 +734,14 @@ function Home() {
           )}
 
           <div className="grid gap-6 md:grid-cols-3">
-            {materials.map((item) => (
-              <div
+            {materials.map((item, index) => (
+              <motion.div
                 key={item.id || item.title}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.08, duration: 0.55 }}
+                whileHover={{ y: -8 }}
                 className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur-xl"
               >
                 <div className="mb-5 flex items-center justify-between gap-4">
@@ -584,22 +769,27 @@ function Home() {
                     href={item.link_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-6 inline-block rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                    className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                   >
                     Открыть материал
+                    <ChevronRight className="h-4 w-4" />
                   </a>
                 ) : (
                   <span className="mt-6 inline-block rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-slate-400">
                     Материал без ссылки
                   </span>
                 )}
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      <section id="achievements" className="relative z-10 px-6 py-20">
+      <motion.section
+        id="achievements"
+        {...sectionMotion}
+        className="relative z-10 px-6 py-20"
+      >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
             badge="Достижения"
@@ -608,9 +798,14 @@ function Home() {
           />
 
           <div className="grid gap-6 md:grid-cols-3">
-            {achievements.map((achievement) => (
-              <div
+            {achievements.map((achievement, index) => (
+              <motion.div
                 key={achievement.id || achievement.title}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.08, duration: 0.55 }}
+                whileHover={{ y: -8 }}
                 className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
               >
                 <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-300/10 text-emerald-200">
@@ -628,13 +823,17 @@ function Home() {
                 <p className="mt-3 text-sm leading-7 text-slate-300">
                   {achievement.text || achievement.description}
                 </p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      <section id="gallery" className="relative z-10 px-6 py-20">
+      <motion.section
+        id="gallery"
+        {...sectionMotion}
+        className="relative z-10 px-6 py-20"
+      >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
             badge="Галерея"
@@ -648,21 +847,27 @@ function Home() {
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-3">
-              {gallery.map((item) => (
+              {gallery.map((item, index) => (
                 <motion.div
                   key={item.id}
+                  initial={{ opacity: 0, scale: 0.94 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.08, duration: 0.55 }}
                   whileHover={{ y: -8 }}
-                  className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 backdrop-blur-xl"
+                  className="group overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 backdrop-blur-xl"
                 >
-                  <div className="relative">
+                  <div className="relative overflow-hidden">
                     <img
                       src={item.image_url}
                       alt={item.title || "Фото галереи"}
-                      className="h-72 w-full object-cover"
+                      className="h-72 w-full object-cover transition duration-700 group-hover:scale-110"
                     />
 
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-80" />
+
                     <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-slate-950/70 px-4 py-2 text-sm text-cyan-100 backdrop-blur">
-                      <Image className="h-4 w-4" />
+                      <ImageIcon className="h-4 w-4" />
                       Фото
                     </div>
                   </div>
@@ -683,9 +888,12 @@ function Home() {
             </div>
           )}
         </div>
-      </section>
+      </motion.section>
 
-      <section className="relative z-10 px-6 py-20">
+      <motion.section
+        {...sectionMotion}
+        className="relative z-10 px-6 py-20"
+      >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
             badge="Отзывы"
@@ -694,17 +902,25 @@ function Home() {
           />
 
           <div className="grid gap-6 md:grid-cols-2">
-            {reviews.map((review) => {
+            {reviews.map((review, index) => {
               const rating = Number(review.rating || 5);
 
               return (
-                <div
+                <motion.div
                   key={review.id || review.name}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.08, duration: 0.55 }}
+                  whileHover={{ y: -8 }}
                   className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
                 >
                   <div className="mb-4 flex gap-1 text-yellow-200">
-                    {Array.from({ length: rating }).map((_, index) => (
-                      <Star key={index} className="h-5 w-5 fill-current" />
+                    {Array.from({ length: rating }).map((_, starIndex) => (
+                      <Star
+                        key={starIndex}
+                        className="h-5 w-5 fill-current"
+                      />
                     ))}
                   </div>
 
@@ -717,14 +933,18 @@ function Home() {
                       {review.role}
                     </p>
                   )}
-                </div>
+                </motion.div>
               );
             })}
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      <section id="contacts" className="relative z-10 px-6 py-20">
+      <motion.section
+        id="contacts"
+        {...sectionMotion}
+        className="relative z-10 px-6 py-20"
+      >
         <div className="mx-auto max-w-7xl">
           <div className="rounded-[3rem] border border-white/10 bg-gradient-to-br from-cyan-300/10 via-white/5 to-emerald-300/10 p-8 backdrop-blur-xl md:p-12">
             <div className="grid gap-10 md:grid-cols-2">
@@ -808,7 +1028,7 @@ function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       <footer className="relative z-10 border-t border-white/10 px-6 py-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-sm text-slate-400 md:flex-row">
@@ -816,6 +1036,22 @@ function Home() {
           <p>Сайт-визитка с админ-панелью</p>
         </div>
       </footer>
+
+      <AnimatePresence>
+        {showBackTop && (
+          <motion.button
+            type="button"
+            onClick={scrollTop}
+            initial={{ opacity: 0, scale: 0.8, y: 18 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 18 }}
+            className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-cyan-300 text-slate-950 shadow-2xl transition hover:bg-cyan-200"
+            aria-label="Наверх"
+          >
+            <ArrowUp className="h-5 w-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
