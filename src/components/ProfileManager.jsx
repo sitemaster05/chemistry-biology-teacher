@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, Save, UserRound } from "lucide-react";
+import { ImagePlus, Loader2, Save, UserRound } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 const defaultProfile = {
@@ -28,10 +28,19 @@ const defaultProfile = {
 
   science_card_title: "",
   science_card_text: "",
+
+  hero_photo_url: "",
+  hero_photo_path: "",
+  background_image_url: "",
+  background_image_path: "",
+  background_overlay_opacity: 0.72,
 };
 
 function ProfileManager() {
   const [profile, setProfile] = useState(defaultProfile);
+  const [heroPhotoFile, setHeroPhotoFile] = useState(null);
+  const [backgroundFile, setBackgroundFile] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -52,37 +61,17 @@ function ProfileManager() {
     setLoading(false);
 
     if (error) {
-      setErrorText("Не удалось загрузить основную информацию.");
+      setErrorText(`Не удалось загрузить основную информацию: ${error.message}`);
       return;
     }
 
     if (data) {
       setProfile({
-        full_name: data.full_name || "",
-        profession: data.profession || "",
-
-        hero_badge: data.hero_badge || "",
-        hero_title: data.hero_title || "",
-        hero_highlight: data.hero_highlight || "",
-        hero_description: data.hero_description || "",
-
-        experience_value: data.experience_value || "",
-        experience_label: data.experience_label || "",
-
-        materials_value: data.materials_value || "",
-        materials_label: data.materials_label || "",
-
-        access_value: data.access_value || "",
-        access_label: data.access_label || "",
-
-        about_title: data.about_title || "",
-        about_text: data.about_text || "",
-
-        approach_title: data.approach_title || "",
-        approach_text: data.approach_text || "",
-
-        science_card_title: data.science_card_title || "",
-        science_card_text: data.science_card_text || "",
+        ...defaultProfile,
+        ...data,
+        background_overlay_opacity: Number(
+          data.background_overlay_opacity ?? 0.72
+        ),
       });
     }
   }
@@ -98,6 +87,38 @@ function ProfileManager() {
     }));
   }
 
+  function getFileExtension(file) {
+    const parts = file.name.split(".");
+    return parts.length > 1 ? parts.pop().toLowerCase() : "jpg";
+  }
+
+  async function uploadAsset(file, folder) {
+    if (!file) return null;
+
+    const extension = getFileExtension(file);
+    const fileName = `${folder}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("site-assets")
+      .upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(uploadError.message);
+    }
+
+    const { data } = supabase.storage
+      .from("site-assets")
+      .getPublicUrl(fileName);
+
+    return {
+      url: data.publicUrl,
+      path: fileName,
+    };
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -105,50 +126,71 @@ function ProfileManager() {
     setSuccessText("");
     setErrorText("");
 
-    const payload = {
-      id: "main",
-      full_name: profile.full_name.trim(),
-      profession: profile.profession.trim(),
+    try {
+      const heroUpload = await uploadAsset(heroPhotoFile, "hero");
+      const backgroundUpload = await uploadAsset(backgroundFile, "backgrounds");
 
-      hero_badge: profile.hero_badge.trim(),
-      hero_title: profile.hero_title.trim(),
-      hero_highlight: profile.hero_highlight.trim(),
-      hero_description: profile.hero_description.trim(),
+      const payload = {
+        id: "main",
 
-      experience_value: profile.experience_value.trim(),
-      experience_label: profile.experience_label.trim(),
+        full_name: profile.full_name.trim(),
+        profession: profile.profession.trim(),
 
-      materials_value: profile.materials_value.trim(),
-      materials_label: profile.materials_label.trim(),
+        hero_badge: profile.hero_badge.trim(),
+        hero_title: profile.hero_title.trim(),
+        hero_highlight: profile.hero_highlight.trim(),
+        hero_description: profile.hero_description.trim(),
 
-      access_value: profile.access_value.trim(),
-      access_label: profile.access_label.trim(),
+        experience_value: profile.experience_value.trim(),
+        experience_label: profile.experience_label.trim(),
 
-      about_title: profile.about_title.trim(),
-      about_text: profile.about_text.trim(),
+        materials_value: profile.materials_value.trim(),
+        materials_label: profile.materials_label.trim(),
 
-      approach_title: profile.approach_title.trim(),
-      approach_text: profile.approach_text.trim(),
+        access_value: profile.access_value.trim(),
+        access_label: profile.access_label.trim(),
 
-      science_card_title: profile.science_card_title.trim(),
-      science_card_text: profile.science_card_text.trim(),
+        about_title: profile.about_title.trim(),
+        about_text: profile.about_text.trim(),
 
-      updated_at: new Date().toISOString(),
-    };
+        approach_title: profile.approach_title.trim(),
+        approach_text: profile.approach_text.trim(),
 
-    const { error } = await supabase
-      .from("site_profile")
-      .upsert(payload, { onConflict: "id" });
+        science_card_title: profile.science_card_title.trim(),
+        science_card_text: profile.science_card_text.trim(),
 
-    setSaving(false);
+        hero_photo_url: heroUpload?.url || profile.hero_photo_url || "",
+        hero_photo_path: heroUpload?.path || profile.hero_photo_path || "",
 
-    if (error) {
-      setErrorText("Не удалось сохранить основную информацию.");
-      return;
+        background_image_url:
+          backgroundUpload?.url || profile.background_image_url || "",
+        background_image_path:
+          backgroundUpload?.path || profile.background_image_path || "",
+
+        background_overlay_opacity: Number(
+          profile.background_overlay_opacity || 0.72
+        ),
+
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from("site_profile")
+        .upsert(payload, { onConflict: "id" });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setHeroPhotoFile(null);
+      setBackgroundFile(null);
+      setSuccessText("Основная информация успешно сохранена.");
+      await loadProfile();
+    } catch (error) {
+      setErrorText(`Не удалось сохранить основную информацию: ${error.message}`);
+    } finally {
+      setSaving(false);
     }
-
-    setSuccessText("Основная информация успешно сохранена.");
-    await loadProfile();
   }
 
   if (loading) {
@@ -173,13 +215,94 @@ function ProfileManager() {
           <div>
             <h2 className="text-2xl font-black">Основная информация</h2>
             <p className="mt-2 text-slate-400">
-              Эти данные отображаются на главном экране, в блоке “Обо мне” и в
-              карточке про науку.
+              Здесь редактируется главный экран, фото преподавателя, фоновое
+              изображение, блок “Обо мне” и научная карточка.
             </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
+          <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/5 p-5 md:col-span-2">
+            <div className="mb-5 flex items-center gap-3">
+              <ImagePlus className="h-6 w-6 text-cyan-200" />
+              <h3 className="text-xl font-bold">Фото и фон сайта</h3>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-sm text-slate-300">
+                  Фото преподавателя
+                </span>
+
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event) =>
+                    setHeroPhotoFile(event.target.files?.[0] || null)
+                  }
+                  className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none file:mr-4 file:rounded-full file:border-0 file:bg-cyan-300 file:px-4 file:py-2 file:font-semibold file:text-slate-950"
+                />
+
+                {profile.hero_photo_url && (
+                  <img
+                    src={profile.hero_photo_url}
+                    alt="Фото преподавателя"
+                    className="mt-4 h-56 w-full rounded-2xl object-cover"
+                  />
+                )}
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm text-slate-300">
+                  Фоновое изображение сайта
+                </span>
+
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event) =>
+                    setBackgroundFile(event.target.files?.[0] || null)
+                  }
+                  className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none file:mr-4 file:rounded-full file:border-0 file:bg-cyan-300 file:px-4 file:py-2 file:font-semibold file:text-slate-950"
+                />
+
+                {profile.background_image_url && (
+                  <img
+                    src={profile.background_image_url}
+                    alt="Фон сайта"
+                    className="mt-4 h-56 w-full rounded-2xl object-cover"
+                  />
+                )}
+              </label>
+
+              <label className="block md:col-span-2">
+                <span className="mb-2 block text-sm text-slate-300">
+                  Затемнение фона: {profile.background_overlay_opacity}
+                </span>
+
+                <input
+                  type="range"
+                  min="0.35"
+                  max="0.9"
+                  step="0.01"
+                  value={profile.background_overlay_opacity}
+                  onChange={(event) =>
+                    updateProfile(
+                      "background_overlay_opacity",
+                      Number(event.target.value)
+                    )
+                  }
+                  className="w-full"
+                />
+
+                <p className="mt-2 text-sm text-slate-500">
+                  Меньше значение — фоновое изображение видно сильнее. Больше
+                  значение — сайт темнее и текст читается лучше.
+                </p>
+              </label>
+            </div>
+          </div>
+
           <label className="block">
             <span className="mb-2 block text-sm text-slate-300">ФИО</span>
             <input
@@ -194,9 +317,7 @@ function ProfileManager() {
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-sm text-slate-300">
-              Профессия
-            </span>
+            <span className="mb-2 block text-sm text-slate-300">Профессия</span>
             <input
               type="text"
               value={profile.profession}
@@ -224,9 +345,7 @@ function ProfileManager() {
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-sm text-slate-300">
-              Заголовок
-            </span>
+            <span className="mb-2 block text-sm text-slate-300">Заголовок</span>
             <input
               type="text"
               value={profile.hero_title}
@@ -262,7 +381,6 @@ function ProfileManager() {
               onChange={(event) =>
                 updateProfile("hero_description", event.target.value)
               }
-              placeholder="Помогаю ученикам понимать сложные темы..."
               rows="4"
               className="w-full resize-none rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
             />
@@ -350,7 +468,6 @@ function ProfileManager() {
               onChange={(event) =>
                 updateProfile("about_title", event.target.value)
               }
-              placeholder="Обучение с понятной структурой"
               className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
             />
           </label>
@@ -379,7 +496,6 @@ function ProfileManager() {
               onChange={(event) =>
                 updateProfile("approach_title", event.target.value)
               }
-              placeholder="Мой подход"
               className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
             />
           </label>
@@ -394,7 +510,6 @@ function ProfileManager() {
               onChange={(event) =>
                 updateProfile("science_card_title", event.target.value)
               }
-              placeholder="Наука может быть понятной"
               className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
             />
           </label>

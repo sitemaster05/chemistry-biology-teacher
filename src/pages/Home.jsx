@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import {
   ArrowUp,
@@ -27,26 +27,39 @@ import {
 const defaultProfile = {
   full_name: "Алиосманова Кристина",
   profession: "Учитель химии и биологии",
+
   hero_badge: "Современное обучение химии и биологии",
   hero_title: "Учитель",
   hero_highlight: "химии и биологии",
   hero_description:
     "Помогаю ученикам понимать сложные темы простым языком, готовиться к урокам, контрольным, олимпиадам и экзаменам.",
+
   experience_value: "5+",
   experience_label: "лет опыта",
+
   materials_value: "100+",
   materials_label: "материалов",
+
   access_value: "24/7",
   access_label: "доступ к сайту",
+
   about_title: "Обучение с понятной структурой",
   about_text:
     "Главная цель — не просто выучить параграф, а действительно понять тему, увидеть логику и научиться применять знания.",
+
   approach_title: "Мой подход",
   approach_text:
     "Я объясняю химию и биологию через схемы, примеры, визуальные образы и практические задания. Для каждого ученика подбираю темп и формат занятий, чтобы материал был понятным и полезным.",
+
   science_card_title: "Наука может быть понятной",
   science_card_text:
     "Химия и биология становятся интереснее, когда ученик видит связь между формулами, клетками, реакциями и реальной жизнью.",
+
+  hero_photo_url: "",
+  hero_photo_path: "",
+  background_image_url: "",
+  background_image_path: "",
+  background_overlay_opacity: 0.72,
 };
 
 const defaultContacts = {
@@ -93,6 +106,117 @@ function getServiceIcon(iconName) {
     default:
       return <FlaskConical className={className} />;
   }
+}
+
+function getServiceVisual(iconName) {
+  if (iconName === "dna") {
+    return (
+      <div className="relative h-20 overflow-hidden rounded-3xl border border-emerald-300/15 bg-emerald-300/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(110,231,183,0.35),transparent_35%),radial-gradient(circle_at_80%_70%,rgba(103,232,249,0.22),transparent_35%)]" />
+
+        <motion.div
+          animate={{ x: [0, 18, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute left-4 top-4 h-12 w-12 rounded-full border-2 border-emerald-200/60"
+        />
+
+        <motion.div
+          animate={{ x: [0, -18, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute right-4 bottom-4 h-12 w-12 rounded-full border-2 border-cyan-200/60"
+        />
+
+        <Dna className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 text-emerald-100" />
+      </div>
+    );
+  }
+
+  if (iconName === "graduation") {
+    return (
+      <div className="relative h-20 overflow-hidden rounded-3xl border border-blue-300/15 bg-blue-300/10">
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(147,197,253,0.28),transparent),radial-gradient(circle_at_80%_20%,rgba(103,232,249,0.28),transparent_35%)]" />
+
+        <div className="absolute bottom-4 left-5 h-3 w-20 rounded-full bg-blue-100/30" />
+        <div className="absolute bottom-8 left-5 h-3 w-28 rounded-full bg-cyan-100/30" />
+        <div className="absolute bottom-12 left-5 h-3 w-16 rounded-full bg-white/30" />
+
+        <GraduationCap className="absolute right-5 top-5 h-10 w-10 text-blue-100" />
+      </div>
+    );
+  }
+
+  if (iconName === "book") {
+    return (
+      <div className="relative h-20 overflow-hidden rounded-3xl border border-cyan-300/15 bg-cyan-300/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(103,232,249,0.3),transparent_35%),linear-gradient(135deg,transparent,rgba(255,255,255,0.08))]" />
+
+        <div className="absolute left-5 top-5 h-11 w-8 rounded-lg border border-cyan-100/40 bg-cyan-100/20" />
+        <div className="absolute left-14 top-5 h-11 w-8 rounded-lg border border-emerald-100/40 bg-emerald-100/20" />
+        <div className="absolute left-24 top-5 h-11 w-8 rounded-lg border border-blue-100/40 bg-blue-100/20" />
+
+        <BookOpen className="absolute right-5 top-5 h-10 w-10 text-cyan-100" />
+      </div>
+    );
+  }
+
+  if (iconName === "microscope") {
+    return (
+      <div className="relative h-20 overflow-hidden rounded-3xl border border-violet-300/15 bg-violet-300/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_35%,rgba(196,181,253,0.33),transparent_35%),radial-gradient(circle_at_25%_80%,rgba(103,232,249,0.2),transparent_35%)]" />
+
+        <Microscope className="absolute left-5 top-5 h-10 w-10 text-violet-100" />
+        <div className="absolute right-5 top-6 h-4 w-4 rounded-full bg-cyan-200/70" />
+        <div className="absolute right-12 top-10 h-2.5 w-2.5 rounded-full bg-emerald-200/70" />
+        <div className="absolute right-8 bottom-5 h-3 w-3 rounded-full bg-white/60" />
+      </div>
+    );
+  }
+
+  if (iconName === "atom") {
+    return (
+      <div className="relative h-20 overflow-hidden rounded-3xl border border-cyan-300/15 bg-cyan-300/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(103,232,249,0.28),transparent_38%)]" />
+
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 9, repeat: Infinity, ease: "linear" }}
+          className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-100/50"
+        />
+
+        <motion.div
+          animate={{ rotate: -360 }}
+          transition={{ duration: 11, repeat: Infinity, ease: "linear" }}
+          className="absolute left-1/2 top-1/2 h-8 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-emerald-100/50"
+        />
+
+        <div className="absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-100" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-20 overflow-hidden rounded-3xl border border-cyan-300/15 bg-cyan-300/10">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(103,232,249,0.35),transparent_35%),radial-gradient(circle_at_80%_75%,rgba(110,231,183,0.25),transparent_35%)]" />
+
+      <div className="absolute left-6 top-5 h-11 w-8 rounded-b-2xl rounded-t-lg border border-cyan-100/50 bg-cyan-100/20" />
+      <div className="absolute left-7 top-9 h-5 w-6 rounded-b-xl bg-cyan-200/45" />
+      <div className="absolute left-8 top-3 h-3 w-4 rounded-t-md border border-cyan-100/50" />
+
+      <motion.div
+        animate={{ y: [0, -5, 0], opacity: [0.4, 1, 0.4] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute right-8 top-6 h-3 w-3 rounded-full bg-emerald-200"
+      />
+
+      <motion.div
+        animate={{ y: [0, -7, 0], opacity: [0.4, 1, 0.4] }}
+        transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute right-14 bottom-6 h-2.5 w-2.5 rounded-full bg-cyan-200"
+      />
+
+      <FlaskConical className="absolute right-5 top-5 h-10 w-10 text-cyan-100" />
+    </div>
+  );
 }
 
 function SectionTitle({ badge, title, text }) {
@@ -222,6 +346,9 @@ function Home() {
         setProfile({
           ...defaultProfile,
           ...profileResponse.data,
+          background_overlay_opacity: Number(
+            profileResponse.data.background_overlay_opacity ?? 0.72
+          ),
         });
       }
 
@@ -348,6 +475,8 @@ function Home() {
 
   const emailHref = contacts.email ? `mailto:${contacts.email}` : "#";
 
+  const overlayOpacity = Number(profile.background_overlay_opacity ?? 0.72);
+
   function closeMenu() {
     setIsMenuOpen(false);
   }
@@ -358,6 +487,23 @@ function Home() {
 
   return (
     <main className="min-h-screen overflow-hidden bg-slate-950 text-white">
+      {profile.background_image_url && (
+        <div className="pointer-events-none fixed inset-0 z-[-2]">
+          <img
+            src={profile.background_image_url}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+
+          <div
+            className="absolute inset-0 bg-slate-950"
+            style={{ opacity: overlayOpacity }}
+          />
+
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(103,232,249,0.22),transparent_34%),radial-gradient(circle_at_80%_30%,rgba(110,231,183,0.18),transparent_34%),linear-gradient(to_bottom,rgba(2,6,23,0.2),rgba(2,6,23,0.92))]" />
+        </div>
+      )}
+
       <FloatingScienceDecor />
 
       <div className="pointer-events-none fixed inset-0 z-0">
@@ -366,7 +512,7 @@ function Home() {
         <div className="absolute bottom-[-10%] left-[35%] h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />
       </div>
 
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/75 backdrop-blur-2xl">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/65 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <a href="#" className="flex items-center gap-3" onClick={closeMenu}>
             <motion.div
@@ -480,11 +626,12 @@ function Home() {
       </AnimatePresence>
 
       <section className="relative z-10 px-6 py-20 md:py-28">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 md:grid-cols-2">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
           <motion.div
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.75, ease: "easeOut" }}
+            className="rounded-[3rem] border border-white/10 bg-slate-950/45 p-6 backdrop-blur-2xl md:p-8"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.94 }}
@@ -564,56 +711,50 @@ function Home() {
             transition={{ duration: 0.85, ease: "easeOut" }}
             className="relative"
           >
-            <div className="relative mx-auto aspect-square max-w-lg rounded-[3rem] border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur-xl">
-              <motion.div
-                animate={{ y: [0, -12, 0], rotate: [0, 8, 0] }}
-                transition={{ duration: 5, repeat: Infinity }}
-                className="absolute -right-8 -top-8 rounded-3xl bg-cyan-300 p-5 text-slate-950 shadow-xl"
-              >
-                <Atom className="h-10 w-10" />
-              </motion.div>
+            <div className="relative mx-auto max-w-lg">
+              <div className="absolute -inset-6 rounded-[3.5rem] bg-gradient-to-br from-cyan-300/20 via-emerald-300/10 to-blue-300/20 blur-2xl" />
 
-              <motion.div
-                animate={{ y: [0, 12, 0], rotate: [0, -8, 0] }}
-                transition={{ duration: 5.5, repeat: Infinity }}
-                className="absolute -bottom-8 -left-8 rounded-3xl bg-emerald-300 p-5 text-slate-950 shadow-xl"
-              >
-                <Dna className="h-10 w-10" />
-              </motion.div>
-
-              <div className="flex h-full flex-col justify-between rounded-[2.2rem] border border-white/10 bg-slate-900/80 p-8">
-                <div>
-                  <div className="mb-8 flex items-center justify-between">
-                    <div className="rounded-2xl bg-cyan-300/10 p-4">
-                      <Beaker className="h-9 w-9 text-cyan-200" />
+              <div className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-white/10 p-4 shadow-2xl backdrop-blur-2xl">
+                <div className="relative overflow-hidden rounded-[2.4rem] border border-white/10 bg-slate-900/70">
+                  {profile.hero_photo_url ? (
+                    <img
+                      src={profile.hero_photo_url}
+                      alt={profile.full_name}
+                      className="h-[560px] w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-[560px] w-full flex-col items-center justify-center bg-gradient-to-br from-cyan-300/20 via-emerald-300/10 to-blue-300/20 p-8 text-center">
+                      <UserPhotoPlaceholder />
                     </div>
+                  )}
 
-                    <div className="rounded-full border border-emerald-300/20 px-4 py-2 text-sm text-emerald-200">
-                      Science Lab
-                    </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+
+                  <div className="absolute bottom-5 left-5 right-5 rounded-[2rem] border border-white/10 bg-slate-950/65 p-5 backdrop-blur-xl">
+                    <p className="text-sm text-cyan-200">{profile.profession}</p>
+                    <p className="mt-1 text-2xl font-black">
+                      {profile.full_name}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">
+                      {profile.science_card_title}
+                    </p>
                   </div>
 
-                  <h3 className="text-3xl font-black">
-                    {profile.science_card_title}
-                  </h3>
+                  <motion.div
+                    animate={{ y: [0, -12, 0], rotate: [0, 8, 0] }}
+                    transition={{ duration: 5, repeat: Infinity }}
+                    className="absolute -right-3 top-8 rounded-3xl bg-cyan-300 p-5 text-slate-950 shadow-xl"
+                  >
+                    <Atom className="h-9 w-9" />
+                  </motion.div>
 
-                  <p className="mt-4 text-slate-300">
-                    {profile.science_card_text}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-3xl bg-white/5 p-5">
-                    <FlaskConical className="mb-3 h-7 w-7 text-cyan-200" />
-                    <p className="font-semibold">Опыты</p>
-                    <p className="text-sm text-slate-400">реакции и формулы</p>
-                  </div>
-
-                  <div className="rounded-3xl bg-white/5 p-5">
-                    <Microscope className="mb-3 h-7 w-7 text-emerald-200" />
-                    <p className="font-semibold">Биология</p>
-                    <p className="text-sm text-slate-400">клетки и системы</p>
-                  </div>
+                  <motion.div
+                    animate={{ y: [0, 12, 0], rotate: [0, -8, 0] }}
+                    transition={{ duration: 5.5, repeat: Infinity }}
+                    className="absolute -left-3 bottom-28 rounded-3xl bg-emerald-300 p-5 text-slate-950 shadow-xl"
+                  >
+                    <Dna className="h-9 w-9" />
+                  </motion.div>
                 </div>
               </div>
             </div>
@@ -636,7 +777,7 @@ function Home() {
           <div className="grid gap-6 md:grid-cols-2">
             <motion.div
               whileHover={{ y: -6 }}
-              className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
+              className="rounded-[2rem] border border-white/10 bg-slate-950/45 p-8 backdrop-blur-2xl"
             >
               <h3 className="text-2xl font-bold">{profile.approach_title}</h3>
 
@@ -647,7 +788,7 @@ function Home() {
 
             <motion.div
               whileHover={{ y: -6 }}
-              className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
+              className="rounded-[2rem] border border-white/10 bg-slate-950/45 p-8 backdrop-blur-2xl"
             >
               <h3 className="text-2xl font-bold">Что получает ученик</h3>
 
@@ -698,13 +839,17 @@ function Home() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.08, duration: 0.55 }}
                 whileHover={{ y: -8 }}
-                className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition hover:border-cyan-300/30"
+                className="overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/45 p-5 backdrop-blur-2xl transition hover:border-cyan-300/30"
               >
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
-                  {getServiceIcon(service.icon)}
-                </div>
+                {getServiceVisual(service.icon)}
 
-                <h3 className="text-xl font-bold">{service.title}</h3>
+                <div className="mt-5 flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+                    {getServiceIcon(service.icon)}
+                  </div>
+
+                  <h3 className="text-xl font-bold">{service.title}</h3>
+                </div>
 
                 <p className="mt-3 text-sm leading-7 text-slate-300">
                   {service.text}
@@ -742,7 +887,7 @@ function Home() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.08, duration: 0.55 }}
                 whileHover={{ y: -8 }}
-                className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur-xl"
+                className="rounded-[2rem] border border-white/10 bg-slate-950/45 p-6 backdrop-blur-2xl"
               >
                 <div className="mb-5 flex items-center justify-between gap-4">
                   <span className="rounded-full bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">
@@ -806,7 +951,7 @@ function Home() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.08, duration: 0.55 }}
                 whileHover={{ y: -8 }}
-                className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
+                className="rounded-[2rem] border border-white/10 bg-slate-950/45 p-6 backdrop-blur-2xl"
               >
                 <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-300/10 text-emerald-200">
                   <Trophy className="h-7 w-7" />
@@ -842,7 +987,7 @@ function Home() {
           />
 
           {gallery.length === 0 ? (
-            <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8 text-center text-slate-400 backdrop-blur-xl">
+            <div className="rounded-[2rem] border border-white/10 bg-slate-950/45 p-8 text-center text-slate-400 backdrop-blur-2xl">
               Фотографии пока не добавлены.
             </div>
           ) : (
@@ -855,7 +1000,7 @@ function Home() {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.08, duration: 0.55 }}
                   whileHover={{ y: -8 }}
-                  className="group overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 backdrop-blur-xl"
+                  className="group overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/45 backdrop-blur-2xl"
                 >
                   <div className="relative overflow-hidden">
                     <img
@@ -913,7 +1058,7 @@ function Home() {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.08, duration: 0.55 }}
                   whileHover={{ y: -8 }}
-                  className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
+                  className="rounded-[2rem] border border-white/10 bg-slate-950/45 p-8 backdrop-blur-2xl"
                 >
                   <div className="mb-4 flex gap-1 text-yellow-200">
                     {Array.from({ length: rating }).map((_, starIndex) => (
@@ -946,7 +1091,7 @@ function Home() {
         className="relative z-10 px-6 py-20"
       >
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-[3rem] border border-white/10 bg-gradient-to-br from-cyan-300/10 via-white/5 to-emerald-300/10 p-8 backdrop-blur-xl md:p-12">
+          <div className="rounded-[3rem] border border-white/10 bg-slate-950/45 p-8 backdrop-blur-2xl md:p-12">
             <div className="grid gap-10 md:grid-cols-2">
               <div>
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">
@@ -1053,6 +1198,23 @@ function Home() {
         )}
       </AnimatePresence>
     </main>
+  );
+}
+
+function UserPhotoPlaceholder() {
+  return (
+    <div>
+      <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-white/10 bg-white/10">
+        <Microscope className="h-12 w-12 text-cyan-200" />
+      </div>
+
+      <h3 className="mt-6 text-2xl font-black">Место для фото</h3>
+
+      <p className="mt-3 max-w-sm text-sm leading-6 text-slate-300">
+        Загрузи фото преподавателя в админке: “Основная информация” → “Фото
+        преподавателя”.
+      </p>
+    </div>
   );
 }
 
