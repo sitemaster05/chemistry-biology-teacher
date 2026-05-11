@@ -1081,7 +1081,7 @@ function Home() {
       <footer className="relative z-10 border-t border-white/10 px-6 py-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-sm text-slate-400 md:flex-row">
           <p>© 2026 {profile.profession}</p>
-          <p>Сайт-визитка с админ-панелью</p>
+          <p></p>
         </div>
       </footer>
 
