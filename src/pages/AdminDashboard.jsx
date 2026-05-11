@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   MessageSquare,
+  Palette,
   Phone,
   Settings,
   Trophy,
@@ -20,8 +21,15 @@ import MaterialsManager from "../components/MaterialsManager";
 import ContactsManager from "../components/ContactsManager";
 import CollectionManager from "../components/CollectionManager";
 import GalleryManager from "../components/GalleryManager";
+import DesignManager from "../components/DesignManager";
 
 const adminSections = [
+  {
+    key: "design",
+    icon: <Palette />,
+    title: "Дизайн сайта",
+    text: "Цветовая тема, фон, карточки, анимации, свечение и визуальные эффекты.",
+  },
   {
     key: "profile",
     icon: <Settings />,
@@ -74,7 +82,7 @@ const adminSections = [
 
 function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState("profile");
+  const [activeSection, setActiveSection] = useState("design");
 
   const selectedSection = adminSections.find(
     (section) => section.key === activeSection
@@ -86,6 +94,10 @@ function AdminDashboard() {
   }
 
   function renderActiveSection() {
+    if (activeSection === "design") {
+      return <DesignManager />;
+    }
+
     if (activeSection === "profile") {
       return <ProfileManager />;
     }

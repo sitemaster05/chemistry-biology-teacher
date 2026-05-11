@@ -1,0 +1,17 @@
+{
+  "name": "Учитель химии и биологии",
+  "short_name": "Химия & Биология",
+  "description": "Сайт-визитка учителя химии и биологии с учебными материалами, отзывами, достижениями и контактами.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#67e8f9",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "128x128",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
