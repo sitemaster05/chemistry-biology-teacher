@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import DebugPage from "./pages/DebugPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import SiteDesignProvider from "./components/SiteDesignProvider";
 
@@ -23,6 +24,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/debug" element={<DebugPage />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
