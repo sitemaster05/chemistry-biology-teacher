@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { supabase } from "../lib/supabase";
+import { loadSiteDataFromApi } from "../lib/siteDataApi";
 import {
   ArrowUp,
   Atom,
@@ -271,6 +271,23 @@ function FloatingScienceDecor() {
   );
 }
 
+function UserPhotoPlaceholder() {
+  return (
+    <div>
+      <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-white/10 bg-white/10">
+        <Microscope className="h-12 w-12 text-cyan-200" />
+      </div>
+
+      <h3 className="mt-6 text-2xl font-black">Место для фото</h3>
+
+      <p className="mt-3 max-w-sm text-sm leading-6 text-slate-300">
+        Загрузи фото преподавателя в админке: “Основная информация” → “Фото
+        преподавателя”.
+      </p>
+    </div>
+  );
+}
+
 function Home() {
   const [profile, setProfile] = useState(defaultProfile);
   const [advantages, setAdvantages] = useState([]);
@@ -287,105 +304,36 @@ function Home() {
 
   const loadSiteData = useCallback(async () => {
     try {
-      const [
-        profileResponse,
-        advantagesResponse,
-        servicesResponse,
-        materialsResponse,
-        achievementsResponse,
-        reviewsResponse,
-        galleryResponse,
-        contactsResponse,
-      ] = await Promise.all([
-        supabase.from("site_profile").select("*").eq("id", "main").maybeSingle(),
+      const data = await loadSiteDataFromApi();
 
-        supabase
-          .from("advantages")
-          .select("*")
-          .eq("is_published", true)
-          .order("sort_order", { ascending: true }),
-
-        supabase
-          .from("services")
-          .select("*")
-          .eq("is_published", true)
-          .order("sort_order", { ascending: true }),
-
-        supabase
-          .from("materials")
-          .select(
-            "id, title, subject, grade, description, link_url, is_published, created_at"
-          )
-          .eq("is_published", true)
-          .order("created_at", { ascending: false })
-          .limit(6),
-
-        supabase
-          .from("achievements")
-          .select("*")
-          .eq("is_published", true)
-          .order("sort_order", { ascending: true }),
-
-        supabase
-          .from("reviews")
-          .select("*")
-          .eq("is_published", true)
-          .order("created_at", { ascending: false }),
-
-        supabase
-          .from("gallery")
-          .select("*")
-          .eq("is_published", true)
-          .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: false }),
-
-        supabase.from("contacts").select("*").eq("id", "main").maybeSingle(),
-      ]);
-
-      if (!profileResponse.error && profileResponse.data) {
+      if (data.profile) {
         setProfile({
           ...defaultProfile,
-          ...profileResponse.data,
+          ...data.profile,
           background_overlay_opacity: Number(
-            profileResponse.data.background_overlay_opacity ?? 0.72
+            data.profile.background_overlay_opacity ?? 0.72
           ),
         });
       }
 
-      if (!advantagesResponse.error) {
-        setAdvantages(
-          (advantagesResponse.data || []).map((item) => item.text || item.title)
-        );
-      }
+      setAdvantages(
+        (data.advantages || []).map((item) => item.text || item.title)
+      );
 
-      if (!servicesResponse.error) {
-        setServices(servicesResponse.data || []);
-      }
+      setServices(data.services || []);
+      setMaterials(data.materials || []);
+      setAchievements(data.achievements || []);
+      setReviews(data.reviews || []);
+      setGallery(data.gallery || []);
 
-      if (!materialsResponse.error) {
-        setMaterials(materialsResponse.data || []);
-      }
-
-      if (!achievementsResponse.error) {
-        setAchievements(achievementsResponse.data || []);
-      }
-
-      if (!reviewsResponse.error) {
-        setReviews(reviewsResponse.data || []);
-      }
-
-      if (!galleryResponse.error) {
-        setGallery(galleryResponse.data || []);
-      }
-
-      if (!contactsResponse.error && contactsResponse.data) {
+      if (data.contacts) {
         setContacts({
           ...defaultContacts,
-          ...contactsResponse.data,
+          ...data.contacts,
         });
       }
     } catch (error) {
-      console.error("Ошибка загрузки данных сайта:", error);
+      console.error("Ошибка загрузки данных сайта через Vercel API:", error);
     } finally {
       setLoading(false);
     }
@@ -398,53 +346,8 @@ function Home() {
       loadSiteData();
     }, 5000);
 
-    const channel = supabase
-      .channel("homepage-live-updates")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "site_profile" },
-        loadSiteData
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "advantages" },
-        loadSiteData
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "services" },
-        loadSiteData
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "materials" },
-        loadSiteData
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "achievements" },
-        loadSiteData
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "reviews" },
-        loadSiteData
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "gallery" },
-        loadSiteData
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "contacts" },
-        loadSiteData
-      )
-      .subscribe();
-
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
     };
   }, [loadSiteData]);
 
@@ -1198,23 +1101,6 @@ function Home() {
         )}
       </AnimatePresence>
     </main>
-  );
-}
-
-function UserPhotoPlaceholder() {
-  return (
-    <div>
-      <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-white/10 bg-white/10">
-        <Microscope className="h-12 w-12 text-cyan-200" />
-      </div>
-
-      <h3 className="mt-6 text-2xl font-black">Место для фото</h3>
-
-      <p className="mt-3 max-w-sm text-sm leading-6 text-slate-300">
-        Загрузи фото преподавателя в админке: “Основная информация” → “Фото
-        преподавателя”.
-      </p>
-    </div>
   );
 }
 
