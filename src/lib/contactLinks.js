@@ -20,6 +20,12 @@ export function normalizeTelegramUrl(value) {
 
   if (!rawValue) return "";
 
+  const mentionMatch = rawValue.match(/@([a-zA-Z0-9_]{5,32})/);
+
+  if (mentionMatch) {
+    return `https://t.me/${mentionMatch[1]}`;
+  }
+
   if (rawValue.startsWith("@")) {
     return `https://t.me/${rawValue.slice(1)}`;
   }
@@ -35,6 +41,14 @@ export function normalizeTelegramUrl(value) {
     const host = parsedUrl.hostname.replace(/^www\./, "");
     const path = parsedUrl.pathname.replace(/^\/+/, "");
     const username = path.split("/")[0];
+
+    if (parsedUrl.protocol === "tg:") {
+      const domain = parsedUrl.searchParams.get("domain");
+
+      if (domain && /^[a-zA-Z0-9_]{5,32}$/.test(domain)) {
+        return `https://t.me/${domain}`;
+      }
+    }
 
     if (host !== "t.me" && host !== "telegram.me") {
       return "";

@@ -350,7 +350,7 @@ function HeroInsightPanel({ profile, contacts }) {
   const cityText = contacts.address || contacts.city || "Онлайн-занятия";
 
   return (
-    <div className="premium-panel absolute -left-8 top-10 hidden max-w-[250px] p-4 lg:block">
+    <div className="premium-panel absolute -left-16 top-14 z-30 hidden max-w-[250px] p-4 xl:-left-24 lg:block">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-300/10 text-cyan-200">
           <Microscope className="h-5 w-5" />
@@ -813,9 +813,9 @@ function Home() {
               <ScienceOrbit />
               <HeroInsightPanel profile={profile} contacts={contacts} />
 
-              <div className="absolute -inset-x-6 -inset-y-8 rounded-[2rem] bg-[linear-gradient(135deg,rgba(103,232,249,0.18),rgba(110,231,183,0.08),rgba(147,197,253,0.16))] blur-2xl" />
+              <div className="absolute -inset-x-6 -inset-y-8 z-0 rounded-[2rem] bg-[linear-gradient(135deg,rgba(103,232,249,0.18),rgba(110,231,183,0.08),rgba(147,197,253,0.16))] blur-2xl" />
 
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/12 bg-white/10 p-3 shadow-2xl backdrop-blur-2xl">
+              <div className="relative z-10 overflow-hidden rounded-[2rem] border border-white/12 bg-white/10 p-3 shadow-2xl backdrop-blur-2xl">
                 <div className="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-900/70">
                   <div className="data-stream absolute inset-x-0 top-0 z-10 h-24 opacity-70" />
 
