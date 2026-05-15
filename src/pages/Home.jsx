@@ -18,6 +18,7 @@ import {
   MessageCircle,
   Microscope,
   Phone,
+  Send,
   Sparkles,
   Star,
   Trophy,
@@ -1274,8 +1275,9 @@ function Home() {
                     href={telegramHref}
                     target="_blank"
                     rel="noreferrer"
-                    className="block rounded-full bg-cyan-300 px-7 py-4 text-center font-bold text-slate-950 transition hover:bg-cyan-200"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-cyan-300 px-7 py-4 text-center font-bold text-slate-950 transition hover:bg-cyan-200"
                   >
+                    <Send className="h-5 w-5" />
                     Написать в Telegram
                   </a>
                 )}

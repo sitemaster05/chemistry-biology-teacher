@@ -33,17 +33,23 @@ export function normalizeTelegramUrl(value) {
       rawValue.startsWith("t.me/") ? `https://${rawValue}` : rawValue
     );
     const host = parsedUrl.hostname.replace(/^www\./, "");
-    const username = parsedUrl.pathname.replace(/^\/+/, "").split("/")[0];
+    const path = parsedUrl.pathname.replace(/^\/+/, "");
+    const username = path.split("/")[0];
 
-    if (
-      (host === "t.me" || host === "telegram.me") &&
-      /^[a-zA-Z0-9_]{5,32}$/.test(username)
-    ) {
-      return `https://t.me/${username}`;
+    if (host !== "t.me" && host !== "telegram.me") {
+      return "";
     }
+
+    if (!path) {
+      return "";
+    }
+
+    if (/^[a-zA-Z0-9_]{5,32}$/.test(username)) {
+      return `https://t.me/${username}${parsedUrl.search}`;
+    }
+
+    return `https://t.me/${path}${parsedUrl.search}`;
   } catch {
     return "";
   }
-
-  return "";
 }

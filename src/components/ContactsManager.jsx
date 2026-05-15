@@ -81,7 +81,8 @@ function ContactsManager() {
       id: "main",
       phone: contacts.phone.trim(),
       email: contacts.email.trim(),
-      telegram_url: normalizeTelegramUrl(contacts.telegram_url),
+      telegram_url:
+        normalizeTelegramUrl(contacts.telegram_url) || contacts.telegram_url.trim(),
       whatsapp_url: contacts.whatsapp_url.trim(),
       city: contacts.city.trim(),
       address: contacts.address.trim(),
