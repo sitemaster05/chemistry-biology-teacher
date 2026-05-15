@@ -4,7 +4,6 @@ import { loadSiteDataFromApi } from "../lib/siteDataApi";
 import {
   ArrowUp,
   Atom,
-  Beaker,
   BookOpen,
   CheckCircle2,
   ChevronRight,
@@ -72,6 +71,8 @@ const defaultContacts = {
   map_url: "",
 };
 
+const siteDataCacheKey = "teacher-site-data-cache-v1";
+
 const navLinks = [
   { href: "#about", label: "Обо мне" },
   { href: "#services", label: "Направления" },
@@ -87,6 +88,81 @@ const sectionMotion = {
   viewport: { once: true, amount: 0.16 },
   transition: { duration: 0.7, ease: "easeOut" },
 };
+
+function safeExternalUrl(url) {
+  if (!url) return "";
+
+  try {
+    const parsedUrl = new URL(url, window.location.origin);
+    const allowedProtocols = ["https:", "mailto:", "tel:"];
+
+    if (allowedProtocols.includes(parsedUrl.protocol)) {
+      return url;
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
+function EmptyState({ icon: Icon = Sparkles, title, text }) {
+  return (
+    <div className="premium-panel mx-auto max-w-3xl p-8 text-center">
+      <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-cyan-200">
+        <Icon className="h-7 w-7" />
+      </div>
+
+      <h3 className="text-xl font-bold text-white">{title}</h3>
+
+      {text && <p className="mt-3 text-sm leading-6 text-slate-400">{text}</p>}
+    </div>
+  );
+}
+
+function readCachedSiteData() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const rawData = window.localStorage.getItem(siteDataCacheKey);
+    return rawData ? JSON.parse(rawData) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedSiteData(data) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(siteDataCacheKey, JSON.stringify(data));
+  } catch {
+    // Cache is only a visual optimization; the live API remains the source.
+  }
+}
+
+function mergeProfile(profile) {
+  if (!profile) return defaultProfile;
+
+  return {
+    ...defaultProfile,
+    ...profile,
+    background_overlay_opacity: Number(
+      profile.background_overlay_opacity ?? 0.72
+    ),
+  };
+}
+
+function mergeContacts(contacts) {
+  return {
+    ...defaultContacts,
+    ...(contacts || {}),
+  };
+}
+
+function getAdvantages(data) {
+  return (data?.advantages || []).map((item) => item.text || item.title);
+}
 
 function getServiceIcon(iconName) {
   const className = "h-7 w-7";
@@ -225,12 +301,12 @@ function SectionTitle({ badge, title, text }) {
       {...sectionMotion}
       className="mx-auto mb-12 max-w-3xl text-center"
     >
-      <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">
+      <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-medium text-cyan-200">
         <Sparkles className="h-4 w-4" />
         {badge}
       </div>
 
-      <h2 className="text-3xl font-bold tracking-tight text-white md:text-5xl">
+      <h2 className="text-3xl font-black tracking-tight text-white md:text-5xl">
         {title}
       </h2>
 
@@ -271,6 +347,61 @@ function FloatingScienceDecor() {
   );
 }
 
+function ScienceOrbit() {
+  return (
+    <div className="science-orbit pointer-events-none absolute -right-8 top-8 hidden h-44 w-44 lg:block">
+      <div className="science-orbit-ring science-orbit-ring-one" />
+      <div className="science-orbit-ring science-orbit-ring-two" />
+      <div className="science-orbit-core">
+        <Atom className="h-7 w-7" />
+      </div>
+      <div className="science-orbit-dot science-orbit-dot-one" />
+      <div className="science-orbit-dot science-orbit-dot-two" />
+    </div>
+  );
+}
+
+function HeroInsightPanel({ profile, contacts }) {
+  const cityText = contacts.address || contacts.city || "Онлайн-занятия";
+
+  return (
+    <div className="premium-panel absolute -left-8 top-10 hidden max-w-[250px] p-4 lg:block">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-300/10 text-cyan-200">
+          <Microscope className="h-5 w-5" />
+        </div>
+
+        <div>
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+            Формат
+          </p>
+          <p className="text-sm font-semibold text-white">{cityText}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+          <p className="text-lg font-black text-cyan-200">
+            {profile.experience_value}
+          </p>
+          <p className="mt-1 text-xs leading-4 text-slate-400">
+            {profile.experience_label}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+          <p className="text-lg font-black text-emerald-200">
+            {profile.materials_value}
+          </p>
+          <p className="mt-1 text-xs leading-4 text-slate-400">
+            {profile.materials_label}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UserPhotoPlaceholder() {
   return (
     <div>
@@ -289,51 +420,53 @@ function UserPhotoPlaceholder() {
 }
 
 function Home() {
-  const [profile, setProfile] = useState(defaultProfile);
-  const [advantages, setAdvantages] = useState([]);
-  const [services, setServices] = useState([]);
-  const [materials, setMaterials] = useState([]);
-  const [achievements, setAchievements] = useState([]);
-  const [reviews, setReviews] = useState([]);
-  const [gallery, setGallery] = useState([]);
-  const [contacts, setContacts] = useState(defaultContacts);
-  const [loading, setLoading] = useState(true);
+  const [cachedSiteData] = useState(() => readCachedSiteData());
+  const [hasDisplayData, setHasDisplayData] = useState(Boolean(cachedSiteData));
+
+  const [profile, setProfile] = useState(() =>
+    mergeProfile(cachedSiteData?.profile)
+  );
+  const [advantages, setAdvantages] = useState(() =>
+    getAdvantages(cachedSiteData)
+  );
+  const [services, setServices] = useState(() => cachedSiteData?.services || []);
+  const [materials, setMaterials] = useState(
+    () => cachedSiteData?.materials || []
+  );
+  const [achievements, setAchievements] = useState(
+    () => cachedSiteData?.achievements || []
+  );
+  const [reviews, setReviews] = useState(() => cachedSiteData?.reviews || []);
+  const [gallery, setGallery] = useState(() => cachedSiteData?.gallery || []);
+  const [contacts, setContacts] = useState(() =>
+    mergeContacts(cachedSiteData?.contacts)
+  );
+  const [loading, setLoading] = useState(!cachedSiteData);
+  const [loadError, setLoadError] = useState("");
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showBackTop, setShowBackTop] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   const loadSiteData = useCallback(async () => {
     try {
       const data = await loadSiteDataFromApi();
 
-      if (data.profile) {
-        setProfile({
-          ...defaultProfile,
-          ...data.profile,
-          background_overlay_opacity: Number(
-            data.profile.background_overlay_opacity ?? 0.72
-          ),
-        });
-      }
-
-      setAdvantages(
-        (data.advantages || []).map((item) => item.text || item.title)
-      );
-
+      setProfile(mergeProfile(data.profile));
+      setAdvantages(getAdvantages(data));
       setServices(data.services || []);
       setMaterials(data.materials || []);
       setAchievements(data.achievements || []);
       setReviews(data.reviews || []);
       setGallery(data.gallery || []);
+      setContacts(mergeContacts(data.contacts));
 
-      if (data.contacts) {
-        setContacts({
-          ...defaultContacts,
-          ...data.contacts,
-        });
-      }
+      writeCachedSiteData(data);
+      setHasDisplayData(true);
+      setLoadError("");
     } catch (error) {
       console.error("Ошибка загрузки данных сайта через Vercel API:", error);
+      setLoadError("Не удалось загрузить актуальные данные сайта.");
     } finally {
       setLoading(false);
     }
@@ -344,7 +477,7 @@ function Home() {
 
     const interval = setInterval(() => {
       loadSiteData();
-    }, 5000);
+    }, 30000);
 
     return () => {
       clearInterval(interval);
@@ -354,6 +487,13 @@ function Home() {
   useEffect(() => {
     function handleScroll() {
       setShowBackTop(window.scrollY > 700);
+
+      const scrollableHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+      const nextProgress =
+        scrollableHeight > 0 ? window.scrollY / scrollableHeight : 0;
+
+      setScrollProgress(Math.min(Math.max(nextProgress, 0), 1));
     }
 
     window.addEventListener("scroll", handleScroll);
@@ -377,6 +517,9 @@ function Home() {
     : "#";
 
   const emailHref = contacts.email ? `mailto:${contacts.email}` : "#";
+  const telegramHref = safeExternalUrl(contacts.telegram_url);
+  const whatsappHref = safeExternalUrl(contacts.whatsapp_url);
+  const mapHref = safeExternalUrl(contacts.map_url);
 
   const overlayOpacity = Number(profile.background_overlay_opacity ?? 0.72);
 
@@ -388,8 +531,41 @@ function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  if (!hasDisplayData) {
+    return (
+      <main className="site-canvas flex min-h-screen items-center justify-center bg-slate-950 px-5 text-white">
+        <div className="premium-panel max-w-xl p-8 text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-200">
+            <Atom className="h-8 w-8" />
+          </div>
+
+          <h1 className="text-3xl font-black">
+            Загружаем актуальные данные сайта
+          </h1>
+
+          <p className="mt-4 leading-7 text-slate-300">
+            Сайт получает последние тексты, контакты и разделы из базы данных.
+          </p>
+
+          {loadError && !loading && (
+            <p className="mt-5 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+              {loadError}
+            </p>
+          )}
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main className="min-h-screen overflow-hidden bg-slate-950 text-white">
+    <main className="site-canvas min-h-screen overflow-hidden bg-slate-950 text-white">
+      <div className="fixed left-0 top-0 z-[70] h-1 w-full bg-slate-950/40">
+        <motion.div
+          className="h-full bg-gradient-to-r from-cyan-300 via-emerald-300 to-blue-300"
+          style={{ scaleX: scrollProgress, transformOrigin: "0% 50%" }}
+        />
+      </div>
+
       {profile.background_image_url && (
         <div className="pointer-events-none fixed inset-0 z-[-2]">
           <img
@@ -410,35 +586,36 @@ function Home() {
       <FloatingScienceDecor />
 
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute left-[-10%] top-[-10%] h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl" />
-        <div className="absolute right-[-10%] top-[20%] h-96 w-96 rounded-full bg-emerald-500/20 blur-3xl" />
-        <div className="absolute bottom-[-10%] left-[35%] h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(14,165,233,0.10),transparent_28%,rgba(16,185,129,0.08)_52%,transparent_78%),linear-gradient(to_bottom,rgba(15,23,42,0.24),rgba(2,6,23,0.94))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:72px_72px] opacity-25" />
       </div>
 
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/65 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/78 backdrop-blur-2xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-6">
           <a href="#" className="flex items-center gap-3" onClick={closeMenu}>
             <motion.div
               whileHover={{ rotate: 12, scale: 1.05 }}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/15 ring-1 ring-cyan-300/30"
+              className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-400/15 ring-1 ring-cyan-300/30"
             >
               <Atom className="h-6 w-6 text-cyan-200" />
             </motion.div>
 
             <div>
-              <p className="text-sm text-slate-400">Учитель</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                Учитель
+              </p>
               <p className="font-semibold text-white">
                 Химия &amp; Биология
               </p>
             </div>
           </a>
 
-          <nav className="hidden items-center gap-7 text-sm text-slate-300 md:flex">
+          <nav className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 text-sm text-slate-300 md:flex">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="relative hover:text-cyan-200"
+                className="rounded-full px-4 py-2 transition hover:bg-white/8 hover:text-cyan-200"
               >
                 {link.label}
               </a>
@@ -448,7 +625,7 @@ function Home() {
           <div className="hidden items-center gap-3 md:flex">
             <a
               href="#contacts"
-              className="rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+              className="rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-200"
             >
               Связаться
             </a>
@@ -457,7 +634,7 @@ function Home() {
           <button
             type="button"
             onClick={() => setIsMenuOpen(true)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white md:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white md:hidden"
             aria-label="Открыть меню"
           >
             <Menu className="h-6 w-6" />
@@ -528,27 +705,42 @@ function Home() {
         )}
       </AnimatePresence>
 
-      <section className="relative z-10 px-6 py-20 md:py-28">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
+      <section className="relative z-10 px-5 py-16 sm:px-6 md:py-24">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:min-h-[calc(100vh-84px)] lg:grid-cols-[1.08fr_0.92fr]">
           <motion.div
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.75, ease: "easeOut" }}
-            className="rounded-[3rem] border border-white/10 bg-slate-950/45 p-6 backdrop-blur-2xl md:p-8"
+            className="max-w-3xl"
           >
+            <div className="mb-5 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+                <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
+                Индивидуальный подход
+              </span>
+
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+                Химия
+              </span>
+
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+                Биология
+              </span>
+            </div>
+
             <motion.div
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.15, duration: 0.55 }}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-sm text-emerald-200"
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-sm text-emerald-200 shadow-lg shadow-emerald-950/20"
             >
               <Microscope className="h-4 w-4" />
               {profile.hero_badge}
             </motion.div>
 
-            <h1 className="text-4xl font-black leading-tight tracking-tight md:text-7xl">
+            <h1 className="max-w-4xl text-4xl font-black leading-[1.04] tracking-tight text-white sm:text-5xl md:text-7xl">
               {profile.full_name}{" "}
-              <span className="block text-3xl md:text-5xl">
+              <span className="mt-3 block text-3xl leading-tight text-slate-100 md:text-5xl">
                 {profile.hero_title}{" "}
                 <span className="bg-gradient-to-r from-cyan-200 via-emerald-200 to-blue-200 bg-clip-text text-transparent">
                   {profile.hero_highlight}
@@ -556,15 +748,15 @@ function Home() {
               </span>
             </h1>
 
-            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 md:text-xl md:leading-9">
               {profile.hero_description}
             </p>
 
-            <div className="mt-9 flex flex-col gap-4 sm:flex-row">
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <motion.a
                 whileHover={{ y: -3, scale: 1.02 }}
                 href="#contacts"
-                className="rounded-full bg-cyan-300 px-7 py-4 text-center font-bold text-slate-950 transition hover:bg-cyan-200"
+                className="rounded-full bg-cyan-300 px-7 py-4 text-center font-bold text-slate-950 shadow-xl shadow-cyan-950/30 transition hover:bg-cyan-200"
               >
                 Записаться на занятие
               </motion.a>
@@ -578,7 +770,7 @@ function Home() {
               </motion.a>
             </div>
 
-            <div className="mt-10 grid max-w-xl grid-cols-3 gap-4">
+            <div className="mt-10 grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
               {[
                 [profile.experience_value, profile.experience_label],
                 [profile.materials_value, profile.materials_label],
@@ -589,7 +781,7 @@ function Home() {
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.25 + index * 0.08, duration: 0.5 }}
-                  className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur"
+                  className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur"
                 >
                   <p
                     className={
@@ -602,8 +794,26 @@ function Home() {
                   >
                     {value}
                   </p>
-                  <p className="text-sm text-slate-400">{label}</p>
+                  <p className="mt-1 text-sm leading-5 text-slate-400">{label}</p>
                 </motion.div>
+              ))}
+            </div>
+
+            <div className="mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
+              {[
+                ["01", "Разбор темы простым языком"],
+                ["02", "Схемы, задания и практика"],
+                ["03", "Подготовка к проверочным"],
+              ].map(([number, text]) => (
+                <div
+                  key={number}
+                  className="rounded-2xl border border-white/10 bg-slate-950/35 p-4 backdrop-blur"
+                >
+                  <p className="text-xs font-bold text-cyan-200">{number}</p>
+                  <p className="mt-2 text-sm leading-5 text-slate-300">
+                    {text}
+                  </p>
+                </div>
               ))}
             </div>
           </motion.div>
@@ -612,28 +822,33 @@ function Home() {
             initial={{ opacity: 0, scale: 0.92, rotate: -2 }}
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
             transition={{ duration: 0.85, ease: "easeOut" }}
-            className="relative"
+            className="relative lg:justify-self-end"
           >
             <div className="relative mx-auto max-w-lg">
-              <div className="absolute -inset-6 rounded-[3.5rem] bg-gradient-to-br from-cyan-300/20 via-emerald-300/10 to-blue-300/20 blur-2xl" />
+              <ScienceOrbit />
+              <HeroInsightPanel profile={profile} contacts={contacts} />
 
-              <div className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-white/10 p-4 shadow-2xl backdrop-blur-2xl">
-                <div className="relative overflow-hidden rounded-[2.4rem] border border-white/10 bg-slate-900/70">
+              <div className="absolute -inset-x-6 -inset-y-8 rounded-[2rem] bg-[linear-gradient(135deg,rgba(103,232,249,0.18),rgba(110,231,183,0.08),rgba(147,197,253,0.16))] blur-2xl" />
+
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/12 bg-white/10 p-3 shadow-2xl backdrop-blur-2xl">
+                <div className="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-900/70">
+                  <div className="data-stream absolute inset-x-0 top-0 z-10 h-24 opacity-70" />
+
                   {profile.hero_photo_url ? (
                     <img
                       src={profile.hero_photo_url}
                       alt={profile.full_name}
-                      className="h-[560px] w-full object-cover"
+                      className="h-[460px] w-full object-cover sm:h-[560px]"
                     />
                   ) : (
-                    <div className="flex h-[560px] w-full flex-col items-center justify-center bg-gradient-to-br from-cyan-300/20 via-emerald-300/10 to-blue-300/20 p-8 text-center">
+                    <div className="flex h-[460px] w-full flex-col items-center justify-center bg-gradient-to-br from-cyan-300/20 via-emerald-300/10 to-blue-300/20 p-8 text-center sm:h-[560px]">
                       <UserPhotoPlaceholder />
                     </div>
                   )}
 
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
 
-                  <div className="absolute bottom-5 left-5 right-5 rounded-[2rem] border border-white/10 bg-slate-950/65 p-5 backdrop-blur-xl">
+                  <div className="absolute bottom-4 left-4 right-4 rounded-2xl border border-white/10 bg-slate-950/72 p-5 backdrop-blur-xl">
                     <p className="text-sm text-cyan-200">{profile.profession}</p>
                     <p className="mt-1 text-2xl font-black">
                       {profile.full_name}
@@ -668,7 +883,7 @@ function Home() {
       <motion.section
         id="about"
         {...sectionMotion}
-        className="relative z-10 px-6 py-20"
+        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
@@ -680,7 +895,7 @@ function Home() {
           <div className="grid gap-6 md:grid-cols-2">
             <motion.div
               whileHover={{ y: -6 }}
-              className="rounded-[2rem] border border-white/10 bg-slate-950/45 p-8 backdrop-blur-2xl"
+              className="premium-panel p-7 md:p-8"
             >
               <h3 className="text-2xl font-bold">{profile.approach_title}</h3>
 
@@ -691,7 +906,7 @@ function Home() {
 
             <motion.div
               whileHover={{ y: -6 }}
-              className="rounded-[2rem] border border-white/10 bg-slate-950/45 p-8 backdrop-blur-2xl"
+              className="premium-panel p-7 md:p-8"
             >
               <h3 className="text-2xl font-bold">Что получает ученик</h3>
 
@@ -724,7 +939,7 @@ function Home() {
       <motion.section
         id="services"
         {...sectionMotion}
-        className="relative z-10 px-6 py-20"
+        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
@@ -733,40 +948,48 @@ function Home() {
             text="Направления работы, которые можно редактировать через админ-панель."
           />
 
-          <div className="grid gap-6 md:grid-cols-4">
-            {services.map((service, index) => (
-              <motion.div
-                key={service.id || service.title}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.08, duration: 0.55 }}
-                whileHover={{ y: -8 }}
-                className="overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/45 p-5 backdrop-blur-2xl transition hover:border-cyan-300/30"
-              >
-                {getServiceVisual(service.icon)}
+          {services.length === 0 ? (
+            <EmptyState
+              icon={FlaskConical}
+              title="Направления пока не добавлены"
+              text="Добавьте услуги в админ-панели, и блок сразу станет готовой витриной занятий."
+            />
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {services.map((service, index) => (
+                <motion.div
+                  key={service.id || service.title}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.08, duration: 0.55 }}
+                  whileHover={{ y: -8 }}
+                  className="premium-card group overflow-hidden p-5 transition hover:border-cyan-300/30"
+                >
+                  {getServiceVisual(service.icon)}
 
-                <div className="mt-5 flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
-                    {getServiceIcon(service.icon)}
+                  <div className="mt-5 flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+                      {getServiceIcon(service.icon)}
+                    </div>
+
+                    <h3 className="text-xl font-bold">{service.title}</h3>
                   </div>
 
-                  <h3 className="text-xl font-bold">{service.title}</h3>
-                </div>
-
-                <p className="mt-3 text-sm leading-7 text-slate-300">
-                  {service.text}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+                  <p className="mt-3 text-sm leading-7 text-slate-300">
+                    {service.text}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </motion.section>
 
       <motion.section
         id="materials"
         {...sectionMotion}
-        className="relative z-10 px-6 py-20"
+        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
@@ -781,17 +1004,27 @@ function Home() {
             </p>
           )}
 
-          <div className="grid gap-6 md:grid-cols-3">
-            {materials.map((item, index) => (
-              <motion.div
-                key={item.id || item.title}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.08, duration: 0.55 }}
-                whileHover={{ y: -8 }}
-                className="rounded-[2rem] border border-white/10 bg-slate-950/45 p-6 backdrop-blur-2xl"
-              >
+          {materials.length === 0 && !loading ? (
+            <EmptyState
+              icon={BookOpen}
+              title="Материалы пока не опубликованы"
+              text="Здесь удобно показывать конспекты, таблицы и ссылки, когда они появятся в админке."
+            />
+          ) : (
+            <div className="grid gap-5 md:grid-cols-3">
+              {materials.map((item, index) => {
+                const materialUrl = safeExternalUrl(item.link_url);
+
+                return (
+                  <motion.div
+                    key={item.id || item.title}
+                    initial={{ opacity: 0, y: 24 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.08, duration: 0.55 }}
+                    whileHover={{ y: -8 }}
+                    className="premium-card p-6"
+                  >
                 <div className="mb-5 flex items-center justify-between gap-4">
                   <span className="rounded-full bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">
                     {item.subject}
@@ -812,9 +1045,9 @@ function Home() {
                   </p>
                 )}
 
-                {item.link_url ? (
+                {materialUrl ? (
                   <a
-                    href={item.link_url}
+                    href={materialUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
@@ -827,16 +1060,18 @@ function Home() {
                     Материал без ссылки
                   </span>
                 )}
-              </motion.div>
-            ))}
-          </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </motion.section>
 
       <motion.section
         id="achievements"
         {...sectionMotion}
-        className="relative z-10 px-6 py-20"
+        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
@@ -845,42 +1080,50 @@ function Home() {
             text="Сертификаты, методические разработки, участие в проектах и образовательные достижения."
           />
 
-          <div className="grid gap-6 md:grid-cols-3">
-            {achievements.map((achievement, index) => (
-              <motion.div
-                key={achievement.id || achievement.title}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.08, duration: 0.55 }}
-                whileHover={{ y: -8 }}
-                className="rounded-[2rem] border border-white/10 bg-slate-950/45 p-6 backdrop-blur-2xl"
-              >
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-300/10 text-emerald-200">
-                  <Trophy className="h-7 w-7" />
-                </div>
+          {achievements.length === 0 ? (
+            <EmptyState
+              icon={Trophy}
+              title="Достижения пока не добавлены"
+              text="Этот блок можно превратить в сильное доверительное доказательство: сертификаты, проекты и результаты учеников."
+            />
+          ) : (
+            <div className="grid gap-5 md:grid-cols-3">
+              {achievements.map((achievement, index) => (
+                <motion.div
+                  key={achievement.id || achievement.title}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.08, duration: 0.55 }}
+                  whileHover={{ y: -8 }}
+                  className="premium-card p-6"
+                >
+                  <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-300/10 text-emerald-200">
+                    <Trophy className="h-7 w-7" />
+                  </div>
 
-                {achievement.year && (
-                  <p className="mb-2 text-sm text-cyan-200">
-                    {achievement.year}
+                  {achievement.year && (
+                    <p className="mb-2 text-sm text-cyan-200">
+                      {achievement.year}
+                    </p>
+                  )}
+
+                  <h3 className="text-xl font-bold">{achievement.title}</h3>
+
+                  <p className="mt-3 text-sm leading-7 text-slate-300">
+                    {achievement.text || achievement.description}
                   </p>
-                )}
-
-                <h3 className="text-xl font-bold">{achievement.title}</h3>
-
-                <p className="mt-3 text-sm leading-7 text-slate-300">
-                  {achievement.text || achievement.description}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </motion.section>
 
       <motion.section
         id="gallery"
         {...sectionMotion}
-        className="relative z-10 px-6 py-20"
+        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
@@ -890,11 +1133,13 @@ function Home() {
           />
 
           {gallery.length === 0 ? (
-            <div className="rounded-[2rem] border border-white/10 bg-slate-950/45 p-8 text-center text-slate-400 backdrop-blur-2xl">
-              Фотографии пока не добавлены.
-            </div>
+            <EmptyState
+              icon={ImageIcon}
+              title="Фотографии пока не добавлены"
+              text="Когда появятся снимки кабинета, уроков или проектов, они аккуратно лягут в эту сетку."
+            />
           ) : (
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-5 md:grid-cols-3">
               {gallery.map((item, index) => (
                 <motion.div
                   key={item.id}
@@ -903,7 +1148,7 @@ function Home() {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.08, duration: 0.55 }}
                   whileHover={{ y: -8 }}
-                  className="group overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/45 backdrop-blur-2xl"
+                  className="premium-card group overflow-hidden"
                 >
                   <div className="relative overflow-hidden">
                     <img
@@ -940,7 +1185,7 @@ function Home() {
 
       <motion.section
         {...sectionMotion}
-        className="relative z-10 px-6 py-20"
+        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
@@ -949,9 +1194,9 @@ function Home() {
             text="Отзывы помогают показать подход к обучению и реальные результаты."
           />
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2">
             {reviews.map((review, index) => {
-              const rating = Number(review.rating || 5);
+              const rating = Math.min(Math.max(Number(review.rating || 5), 1), 5);
 
               return (
                 <motion.div
@@ -961,7 +1206,7 @@ function Home() {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.08, duration: 0.55 }}
                   whileHover={{ y: -8 }}
-                  className="rounded-[2rem] border border-white/10 bg-slate-950/45 p-8 backdrop-blur-2xl"
+                  className="premium-card p-7 md:p-8"
                 >
                   <div className="mb-4 flex gap-1 text-yellow-200">
                     {Array.from({ length: rating }).map((_, starIndex) => (
@@ -991,10 +1236,10 @@ function Home() {
       <motion.section
         id="contacts"
         {...sectionMotion}
-        className="relative z-10 px-6 py-20"
+        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-[3rem] border border-white/10 bg-slate-950/45 p-8 backdrop-blur-2xl md:p-12">
+          <div className="premium-panel overflow-hidden p-7 md:p-12">
             <div className="grid gap-10 md:grid-cols-2">
               <div>
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">
@@ -1040,9 +1285,9 @@ function Home() {
                   </div>
                 )}
 
-                {contacts.telegram_url && (
+                {telegramHref && (
                   <a
-                    href={contacts.telegram_url}
+                    href={telegramHref}
                     target="_blank"
                     rel="noreferrer"
                     className="block rounded-full bg-cyan-300 px-7 py-4 text-center font-bold text-slate-950 transition hover:bg-cyan-200"
@@ -1051,9 +1296,9 @@ function Home() {
                   </a>
                 )}
 
-                {contacts.whatsapp_url && (
+                {whatsappHref && (
                   <a
-                    href={contacts.whatsapp_url}
+                    href={whatsappHref}
                     target="_blank"
                     rel="noreferrer"
                     className="block rounded-full border border-emerald-300/30 bg-emerald-300/10 px-7 py-4 text-center font-bold text-emerald-100 transition hover:bg-emerald-300/20"
@@ -1062,9 +1307,9 @@ function Home() {
                   </a>
                 )}
 
-                {contacts.map_url && (
+                {mapHref && (
                   <a
-                    href={contacts.map_url}
+                    href={mapHref}
                     target="_blank"
                     rel="noreferrer"
                     className="block rounded-full border border-white/10 px-7 py-4 text-center font-bold text-white transition hover:bg-white/10"

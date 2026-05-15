@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Edit3, Loader2, Plus, Save, Trash2, X } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
@@ -21,7 +21,7 @@ function SimpleCollectionManager({
   const [errorText, setErrorText] = useState("");
   const [successText, setSuccessText] = useState("");
 
-  async function loadItems() {
+  const loadItems = useCallback(async () => {
     setLoading(true);
     setErrorText("");
     setSuccessText("");
@@ -39,11 +39,11 @@ function SimpleCollectionManager({
     }
 
     setItems(data || []);
-  }
+  }, [orderAscending, orderField, tableName]);
 
   useEffect(() => {
     loadItems();
-  }, [tableName]);
+  }, [loadItems]);
 
   function updateForm(field, value) {
     setForm((current) => ({
