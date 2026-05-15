@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { loadSiteDataFromApi } from "../lib/siteDataApi";
+import { normalizeTelegramUrl, safeExternalUrl } from "../lib/contactLinks";
 import {
   ArrowUp,
   Atom,
@@ -88,23 +89,6 @@ const sectionMotion = {
   viewport: { once: true, amount: 0.16 },
   transition: { duration: 0.7, ease: "easeOut" },
 };
-
-function safeExternalUrl(url) {
-  if (!url) return "";
-
-  try {
-    const parsedUrl = new URL(url, window.location.origin);
-    const allowedProtocols = ["https:", "mailto:", "tel:"];
-
-    if (allowedProtocols.includes(parsedUrl.protocol)) {
-      return url;
-    }
-  } catch {
-    return "";
-  }
-
-  return "";
-}
 
 function EmptyState({ icon: Icon = Sparkles, title, text }) {
   return (
@@ -517,7 +501,7 @@ function Home() {
     : "#";
 
   const emailHref = contacts.email ? `mailto:${contacts.email}` : "#";
-  const telegramHref = safeExternalUrl(contacts.telegram_url);
+  const telegramHref = normalizeTelegramUrl(contacts.telegram_url);
   const whatsappHref = safeExternalUrl(contacts.whatsapp_url);
   const mapHref = safeExternalUrl(contacts.map_url);
 

@@ -8,6 +8,7 @@ import {
   Save,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { normalizeTelegramUrl } from "../lib/contactLinks";
 
 const emptyContacts = {
   phone: "",
@@ -80,7 +81,7 @@ function ContactsManager() {
       id: "main",
       phone: contacts.phone.trim(),
       email: contacts.email.trim(),
-      telegram_url: contacts.telegram_url.trim(),
+      telegram_url: normalizeTelegramUrl(contacts.telegram_url),
       whatsapp_url: contacts.whatsapp_url.trim(),
       city: contacts.city.trim(),
       address: contacts.address.trim(),
@@ -159,16 +160,16 @@ function ContactsManager() {
           <label className="block">
             <span className="mb-2 flex items-center gap-2 text-sm text-slate-300">
               <MessageCircle className="h-4 w-4 text-cyan-200" />
-              Telegram-ссылка
+              Telegram
             </span>
 
             <input
-              type="url"
+              type="text"
               value={contacts.telegram_url}
               onChange={(event) =>
                 updateContacts("telegram_url", event.target.value)
               }
-              placeholder="https://t.me/username"
+              placeholder="@username или https://t.me/username"
               className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none placeholder:text-slate-600"
             />
           </label>
