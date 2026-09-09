@@ -1558,7 +1558,7 @@ function Home() {
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.75, ease: "easeOut" }}
-            className="max-w-3xl"
+            className="min-w-0 max-w-3xl"
           >
             <div className="mb-5 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
@@ -1615,14 +1615,14 @@ function Home() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <MagneticButton
                 href="#contacts"
-                className="btn-shine inline-block rounded-full bg-cyan-300 px-7 py-4 text-center font-bold text-slate-950 shadow-xl shadow-cyan-950/30 transition hover:bg-cyan-200"
+                className="btn-shine inline-block rounded-full bg-cyan-300 px-6 py-3.5 text-center text-sm font-bold text-slate-950 shadow-xl shadow-cyan-950/30 transition hover:bg-cyan-200 sm:px-7 sm:py-4 sm:text-base"
               >
                 Записаться на занятие
               </MagneticButton>
 
               <MagneticButton
                 href="#materials"
-                className="inline-block rounded-full border border-white/15 bg-white/5 px-7 py-4 text-center font-bold text-white backdrop-blur transition hover:bg-white/10"
+                className="inline-block rounded-full border border-white/15 bg-white/5 px-6 py-3.5 text-center text-sm font-bold text-white backdrop-blur transition hover:bg-white/10 sm:px-7 sm:py-4 sm:text-base"
               >
                 Посмотреть материалы
               </MagneticButton>
@@ -1682,7 +1682,7 @@ function Home() {
             initial={{ opacity: 0, scale: 0.92, rotate: -2 }}
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
             transition={{ duration: 0.85, ease: "easeOut" }}
-            className="relative lg:justify-self-end"
+            className="relative min-w-0 w-full lg:justify-self-end"
           >
             <SciencePanel profile={profile} />
           </motion.div>
