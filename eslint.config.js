@@ -22,7 +22,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['api/**/*.js'],
+    files: ['api/**/*.js', 'server/**/*.js', 'vite.config.js', 'test-email.mjs'],
     languageOptions: {
       globals: globals.node,
     },

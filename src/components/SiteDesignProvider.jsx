@@ -294,6 +294,18 @@ function SiteDesignProvider() {
         }
       `;
 
+    // Выключение анимаций в админке останавливает и научный фон главной страницы
+    const siteAnimationsCss =
+      design.animation_style === "none"
+        ? `
+        .science-bg-anim,
+        .science-bubble,
+        .science-orbit-ring {
+          animation: none !important;
+        }
+      `
+        : "";
+
     return `
       :root {
         --site-bg: ${theme.bg};
@@ -399,6 +411,7 @@ function SiteDesignProvider() {
       ${glowCss}
       ${roundedCss}
       ${particlesCss}
+      ${siteAnimationsCss}
 
       @keyframes designAurora {
         0% {

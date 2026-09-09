@@ -8,9 +8,26 @@ body {
   margin: 0;
   background: #020617;
   color: #ffffff;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    "Manrope",
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
+}
+
+/* На мобильных запрещаем iOS автоматически зумить страницу
+   при фокусе на полях с мелким шрифтом */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 ::selection {
@@ -153,6 +170,49 @@ body {
   animation: dataSweep 5.5s ease-in-out infinite;
 }
 
+/* Бегущая строка химических формул */
+.formula-track {
+  animation: formulaScroll 30s linear infinite;
+}
+
+@keyframes formulaScroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Анимация двойной спирали ДНК */
+.dna-strand {
+  stroke-dasharray: 0.5 9;
+  animation: dnaFlow 3.2s linear infinite;
+}
+
+.dna-strand-b {
+  animation-duration: 4.1s;
+  animation-direction: reverse;
+}
+
+.dna-rung {
+  animation: dnaRungPulse 3.2s ease-in-out infinite;
+}
+
+@keyframes dnaFlow {
+  to {
+    stroke-dashoffset: -38;
+  }
+}
+
+@keyframes dnaRungPulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
 @keyframes orbitSpin {
   to {
     transform: rotate(360deg);
@@ -178,9 +238,454 @@ body {
   }
 }
 
+/* ============================================================
+   Научный фон (слой за всем контентом, z-index: -1)
+   Цвета берутся из CSS-переменных темы сайта,
+   поэтому фон автоматически подстраивается под выбранную тему.
+   ============================================================ */
+
+.science-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Виньетка: мягкое затемнение краёв, чтобы фокус оставался на контенте */
+.science-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 52%,
+    rgba(2, 6, 23, 0.5) 100%
+  );
+}
+
+/* --- Аврора: большие мягкие цветные пятна --- */
+
+.aurora {
+  position: absolute;
+  border-radius: 9999px;
+  will-change: transform;
+}
+
+.aurora-one {
+  top: -18%;
+  left: -12%;
+  width: 58vmax;
+  height: 58vmax;
+  background: radial-gradient(
+    circle,
+    var(--site-primary-soft, rgba(103, 232, 249, 0.18)) 0%,
+    transparent 64%
+  );
+  animation: auroraDriftOne 52s ease-in-out infinite alternate;
+}
+
+.aurora-two {
+  top: 22%;
+  right: -16%;
+  width: 52vmax;
+  height: 52vmax;
+  background: radial-gradient(
+    circle,
+    var(--site-secondary-soft, rgba(110, 231, 183, 0.18)) 0%,
+    transparent 64%
+  );
+  animation: auroraDriftTwo 64s ease-in-out infinite alternate;
+}
+
+.aurora-three {
+  bottom: -20%;
+  left: 22%;
+  width: 55vmax;
+  height: 55vmax;
+  background: radial-gradient(
+    circle,
+    rgba(147, 197, 253, 0.12) 0%,
+    transparent 66%
+  );
+  animation: auroraDriftThree 58s ease-in-out infinite alternate;
+}
+
+@keyframes auroraDriftOne {
+  to {
+    transform: translate3d(6vw, 4vh, 0) scale(1.08);
+  }
+}
+
+@keyframes auroraDriftTwo {
+  to {
+    transform: translate3d(-5vw, 6vh, 0) scale(1.12);
+  }
+}
+
+@keyframes auroraDriftThree {
+  to {
+    transform: translate3d(4vw, -5vh, 0) scale(1.06);
+  }
+}
+
+/* --- Молекулярная решётка (бензольные кольца) --- */
+
+.bg-lattice {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: latticeDrift 90s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes latticeDrift {
+  to {
+    transform: translate3d(-44px, -32px, 0);
+  }
+}
+
+/* --- Пузырьки, всплывающие как в растворе --- */
+
+.science-bubble {
+  position: absolute;
+  bottom: -36px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background:
+    radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.45), transparent 45%),
+    radial-gradient(
+      circle,
+      var(--site-primary-soft, rgba(103, 232, 249, 0.18)) 0%,
+      transparent 72%
+    );
+  opacity: 0;
+  animation: bubbleRise linear infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes bubbleRise {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: var(--bubble-opacity, 0.3);
+  }
+
+  82% {
+    opacity: var(--bubble-opacity, 0.3);
+  }
+
+  100% {
+    transform: translate3d(var(--bubble-x, 20px), -112vh, 0);
+    opacity: 0;
+  }
+}
+
+/* --- Водяные знаки: крупные символы науки --- */
+
+.bg-watermark {
+  position: absolute;
+  color: var(--site-primary, #67e8f9);
+  opacity: 0.055;
+  filter: blur(1.5px);
+  will-change: transform;
+}
+
+.bg-watermark-atom {
+  top: 12%;
+  right: 6%;
+  width: 190px;
+  height: 190px;
+  animation: watermarkFloatA 38s ease-in-out infinite alternate;
+}
+
+.bg-watermark-dna {
+  bottom: 18%;
+  left: 5%;
+  width: 170px;
+  height: 170px;
+  color: var(--site-secondary, #6ee7b7);
+  animation: watermarkFloatB 44s ease-in-out infinite alternate;
+}
+
+.bg-watermark-flask {
+  top: 55%;
+  right: 12%;
+  width: 130px;
+  height: 130px;
+  color: var(--site-accent, #93c5fd);
+  animation: watermarkFloatC 50s ease-in-out infinite alternate;
+}
+
+@keyframes watermarkFloatA {
+  from {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  to {
+    transform: translate3d(-26px, 30px, 0) rotate(24deg);
+  }
+}
+
+@keyframes watermarkFloatB {
+  from {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  to {
+    transform: translate3d(30px, -24px, 0) rotate(-18deg);
+  }
+}
+
+@keyframes watermarkFloatC {
+  from {
+    transform: translate3d(0, 0, 0) rotate(-8deg);
+  }
+
+  to {
+    transform: translate3d(-20px, -18px, 0) rotate(14deg);
+  }
+}
+
+/* На мобильных оставляем только один водяной знак — без перегруза */
+@media (max-width: 767px) {
+  .bg-watermark-dna,
+  .bg-watermark-flask {
+    display: none;
+  }
+
+  .bg-watermark-atom {
+    top: 8%;
+    right: -20px;
+    width: 120px;
+    height: 120px;
+  }
+}
+
+/* --- Парящие плитки-символы в фоне (перенесены из переднего плана) --- */
+
+.bg-ghost {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24px;
+  border: 1px solid
+    color-mix(in srgb, var(--site-primary, #67e8f9) 22%, transparent);
+  background: color-mix(in srgb, var(--site-primary, #67e8f9) 6%, transparent);
+  color: var(--site-primary, #67e8f9);
+  opacity: 0.32;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.bg-ghost-atom {
+  top: 44%;
+  left: 8%;
+  width: 88px;
+  height: 88px;
+  animation: ghostFloatA 17s ease-in-out infinite alternate;
+}
+
+.bg-ghost-dna {
+  bottom: 11%;
+  right: 27%;
+  width: 78px;
+  height: 78px;
+  color: var(--site-secondary, #6ee7b7);
+  border-color: color-mix(
+    in srgb,
+    var(--site-secondary, #6ee7b7) 22%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--site-secondary, #6ee7b7) 6%,
+    transparent
+  );
+  animation: ghostFloatB 21s ease-in-out infinite alternate;
+}
+
+@keyframes ghostFloatA {
+  from {
+    transform: translate3d(0, 0, 0) rotate(-6deg);
+  }
+
+  to {
+    transform: translate3d(22px, -26px, 0) rotate(8deg);
+  }
+}
+
+@keyframes ghostFloatB {
+  from {
+    transform: translate3d(0, 0, 0) rotate(5deg);
+  }
+
+  to {
+    transform: translate3d(-24px, 20px, 0) rotate(-7deg);
+  }
+}
+
+/* Обёртка орбиты атома в фоне: приглушение до «водяного знака» */
+.science-bg-ghost {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  .bg-ghost {
+    display: none;
+  }
+}
+
+/* ============================================================
+   Премиальные WOW-эффекты
+   ============================================================ */
+
+/* Зернистая плёнка поверх всего сайта — глубина и «плёночность» */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* Свечение карточки, следующее за курсором */
+.spotlight-card {
+  position: relative;
+}
+
+.spotlight-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 350ms ease;
+  pointer-events: none;
+  background: radial-gradient(
+    420px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    var(--site-primary-soft, rgba(103, 232, 249, 0.18)),
+    transparent 42%
+  );
+}
+
+.spotlight-card:hover::after {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .spotlight-card::after {
+    display: none;
+  }
+}
+
+/* Живой градиент заголовка — цвета темы плавно текут */
+.hero-gradient-text {
+  background: linear-gradient(
+    90deg,
+    var(--site-primary, #67e8f9),
+    var(--site-secondary, #6ee7b7),
+    var(--site-accent, #93c5fd),
+    var(--site-primary, #67e8f9)
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradientFlow 9s linear infinite;
+}
+
+@keyframes gradientFlow {
+  to {
+    background-position: 300% 0;
+  }
+}
+
+/* Пробегающий блик на кнопках */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -90%;
+  width: 55%;
+  height: 100%;
+  transform: skewX(-22deg);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shineSweep 3.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes shineSweep {
+  0%,
+  55% {
+    left: -90%;
+  }
+
+  100% {
+    left: 160%;
+  }
+}
+
+/* Пузырьки в колбе (блок «Обо мне») */
+.flask-bubble {
+  animation: flaskBubbleRise 3.4s ease-in-out infinite;
+}
+
+@keyframes flaskBubbleRise {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+
+  18% {
+    opacity: 0.85;
+  }
+
+  100% {
+    transform: translateY(-22px);
+    opacity: 0;
+  }
+}
+
+/* Контурный текст бегущей строки дисциплин */
+.marquee-outline-text {
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.16);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .science-orbit-ring,
-  .data-stream {
+  .data-stream,
+  .formula-track,
+  .dna-strand,
+  .dna-rung,
+  .science-bg-anim,
+  .science-bubble,
+  .hero-gradient-text,
+  .btn-shine::after,
+  .flask-bubble {
     animation: none;
   }
 }
@@ -189,4 +694,23 @@ body {
   .premium-panel {
     border-radius: 1rem;
   }
+}
+
+/* Плавный скроллбар в тон дизайна */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(2, 6, 23, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(103, 232, 249, 0.22);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(103, 232, 249, 0.38);
 }

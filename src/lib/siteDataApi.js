@@ -145,11 +145,9 @@ export async function loadSiteDataFromApi() {
   try {
     return await fetchJsonWithTimeout(`/api/site-data?t=${Date.now()}`);
   } catch (error) {
-    if (!import.meta.env.DEV) {
-      throw error;
-    }
-
-    console.warn("Vercel API is unavailable locally, using Supabase fallback.");
+    // Если Vercel API недоступен (сбой, локальный запуск без серверлесс-функций) —
+    // читаем публичные данные напрямую из Supabase, чтобы сайт продолжал работать.
+    console.warn("Site API is unavailable, using direct Supabase fallback.", error);
     return loadSiteDataFromSupabase();
   }
 }

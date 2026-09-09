@@ -1,16 +1,145 @@
-# React + Vite
+# Сайт-визитка учителя химии и биологии
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Современный адаптивный сайт-визитка с админ-панелью, формой обратной связи и живым редактированием контента.
 
-Currently, two official plugins are available:
+**Стек:** React 19 + Vite 8 + Tailwind CSS 4 + Framer Motion + Supabase (база данных, авторизация, хранилище файлов) + Vercel (хостинг и API).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Возможности сайта
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Главная страница** — первый экран без фото, с анимированной научной панелью (элементы «водород‑углерод‑азот‑кислород», анимированная ДНК, бегущая строка химических формул).
+- **Разделы**: Обо мне, Направления, Материалы, Достижения, Галерея, Отзывы, Контакты.
+- **Форма обратной связи** — посетители отправляют сообщения прямо с сайта; они попадают в админ-панель.
+- **Адаптивность** — корректно работает на телефонах, планшетах и десктопах.
+- **Темы оформления** — переключаются в админке (Science / Biology / Premium / Sunset), фон, карточки, анимации.
+- **SEO** — мета-теги, Open Graph, manifest, SVG-фавиконка.
 
-## Expanding the ESLint configuration
+## Возможности админ-панели (`/login` → `/admin`)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+| Раздел | Что можно делать |
+| --- | --- |
+| **Сообщения** | Читать сообщения из формы сайта, отмечать прочитанными, удалять, видеть счётчик непрочитанных |
+| **Дизайн сайта** | Тема, фон, стиль карточек, анимации, свечение |
+| **Основная информация** | ФИО, тексты первого экрана, цифры, «Обо мне», фон сайта и затемнение |
+| **Преимущества / Направления / Достижения / Отзывы** | Добавление, редактирование, порядок, публикация |
+| **Учебные материалы** | Конспекты и ссылки по предметам и классам |
+| **Галерея** | Загрузка фото с подписями |
+| **Контакты** | Телефон, email, Telegram, WhatsApp, город, карта |
+
+---
+
+## Первичная настройка (один раз)
+
+### 1. Переменные окружения
+
+Файл `.env.local` в корне проекта:
+
+```
+VITE_SUPABASE_URL=https://<проект>.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<публичный ключ>
+```
+
+На Vercel те же переменные задаются в **Settings → Environment Variables**.
+
+### 2. Таблица для сообщений (обязательно для формы)
+
+Форма обратной связи пишет сообщения в таблицу `contact_messages`. Чтобы её создать:
+
+1. Откройте [Supabase Dashboard](https://supabase.com/dashboard) → ваш проект.
+2. Слева выберите **SQL Editor**.
+3. Скопируйте **всё** содержимое файла [`supabase-setup.sql`](./supabase-setup.sql) и нажмите **Run**.
+
+Скрипт создаёт таблицу `contact_messages` и настраивает права: посетители могут только отправлять сообщения, а читать/удалять их может лишь авторизованный администратор. Повторный запуск безопасен.
+
+### 3. Администратор
+
+В Supabase: **Authentication → Users → Add user** — укажите email и пароль. Этой парой входите на `/login`.
+
+### 4. Почтовые уведомления с формы (письма на nadira.05@mail.ru)
+
+Сообщения из формы отправляются **двумя путями одновременно**: сохраняются в базу (раздел «Сообщения» в админке) и приходят **письмом** на почту учителя. Письма уходят с адреса `vpn05uzb@gmail.com` через SMTP Gmail.
+
+**Шаг 1. Пароль приложения Google** (делается один раз):
+
+1. Войдите в Google-аккаунт `vpn05uzb@gmail.com`.
+2. Включите двухэтапную аутентификацию: [myaccount.google.com/security](https://myaccount.google.com/security) (без неё Google не даёт пароли приложений).
+3. Создайте пароль приложения: [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) → название любое, например «Сайт учителя» → Google покажет **16-символьный код**. Сохраните его.
+
+**Шаг 2. Переменные окружения на Vercel** (Settings → Environment Variables):
+
+| Переменная | Значение |
+| --- | --- |
+| `EMAIL_SERVER_USER` | `vpn05uzb@gmail.com` |
+| `EMAIL_SERVER_APP_PASSWORD` | 16-символьный пароль приложения из шага 1 |
+| `EMAIL_TO` | `nadira.05@mail.ru` |
+| `EMAIL_FROM_NAME` | `Сайт учителя химии и биологии` (необязательно) |
+
+После этого задеплойте проект — письма начнут приходить.
+
+**Проверка почты локально:** заполните `EMAIL_SERVER_APP_PASSWORD` в `.env.local` и запустите `test-email.bat` (или `node --env-file=.env.local test-email.mjs`) — на `EMAIL_TO` придёт тестовое письмо. В git пароль не попадает: `.env.local` в `.gitignore`.
+
+**Форма на локальном dev-сервере:** `npm run dev` поднимает `/api/send-email` прямо локально (плагин в `vite.config.js`, настройки из `.env.local`) — письма отправляются с вашего компьютера без деплоя. На проде ту же работу выполняет функция `api/send-email.js`.
+
+**Как отвечать посетителю:** в письме поле «Ответить» (Reply-To) уже подставляет контакт посетителя — просто нажмите «Ответить» в почте.
+
+**Если письма не приходят:** проверьте папку «Спам» на nadira.05@mail.ru и отметьте письмо как «не спам» — после этого последующие будут приходить во «Входящие». Ограничение Gmail — около 500 писем в сутки, для сайта-визитки этого более чем достаточно.
+
+---
+
+## Запуск локально
+
+```bash
+npm install
+npm run dev        # http://localhost:5173
+```
+
+Локально сайт читает данные напрямую из Supabase (Vercel-функции доступны только на деплое).
+
+## Сборка и деплой
+
+```bash
+npm run build      # прод-сборка в dist/
+npm run preview    # локальный предпросмотр сборки
+```
+
+Деплой на Vercel: подключите репозиторий, Vercel сам определит Vite. Функции из папки `api/` (`site-data`, `storage-file`) подхватятся автоматически. Не забудьте добавить переменные окружения из шага 1.
+
+---
+
+## Структура проекта
+
+```
+├── api/                      # Vercel serverless-функции
+│   ├── site-data.js          #   агрегирует все данные сайта из Supabase
+│   ├── send-email.js         #   отправляет письма с формы на почту (SMTP Gmail)
+│   └── storage-file.js       #   отдаёт файлы из Supabase Storage
+├── public/                   # favicon, manifest
+├── src/
+│   ├── components/
+│   │   ├── SiteDesignProvider.jsx   # живая тема оформления (realtime + опрос)
+│   │   ├── MessagesManager.jsx      # админ: сообщения с формы
+│   │   ├── DesignManager.jsx        # админ: дизайн
+│   │   ├── ProfileManager.jsx       # админ: основная информация
+│   │   ├── ContactsManager.jsx      # админ: контакты
+│   │   ├── CollectionManager.jsx    # админ: преимущества/направления/достижения/отзывы
+│   │   ├── MaterialsManager.jsx     # админ: материалы
+│   │   ├── GalleryManager.jsx       # админ: галерея
+│   │   └── ProtectedRoute.jsx       # защита /admin по сессии
+│   ├── lib/                  # supabase-клиент, API данных, нормализация ссылок
+│   └── pages/                # Home (сайт), AdminLogin, AdminDashboard
+├── supabase-setup.sql        # миграция: таблица contact_messages
+└── index.html                # мета-теги, шрифты
+```
+
+## Как работает обновление контента
+
+- Публичная страница опрашивает `/api/site-data` каждые 30 секунд (с fallback на прямой запрос к Supabase) и кэширует данные в localStorage для мгновенной загрузки.
+- Тема оформления обновляется через Supabase Realtime.
+- После правок в админке изменения появляются на сайте при обновлении страницы (или в течение ~30 секунд без обновления).
+
+## Заметки по безопасности
+
+- Таблица `contact_messages` защищена RLS-политиками (см. `supabase-setup.sql`).
+- Ссылки на внешние ресурсы проходят проверку протокола (`https`, `mailto`, `tel`) в `src/lib/contactLinks.js`.
+- Публичный ключ Supabase — это нормально: он предназначен для клиента, доступ ограничивается RLS.

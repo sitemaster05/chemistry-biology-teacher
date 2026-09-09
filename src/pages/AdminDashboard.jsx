@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
 import {
   Award,
   BookOpen,
   BriefcaseBusiness,
   CheckCircle2,
   Image,
+  Inbox,
   LayoutDashboard,
   LogOut,
   MessageSquare,
@@ -22,8 +22,15 @@ import ContactsManager from "../components/ContactsManager";
 import CollectionManager from "../components/CollectionManager";
 import GalleryManager from "../components/GalleryManager";
 import DesignManager from "../components/DesignManager";
+import MessagesManager from "../components/MessagesManager";
 
 const adminSections = [
+  {
+    key: "messages",
+    icon: <Inbox />,
+    title: "Сообщения",
+    text: "Сообщения из формы обратной связи на сайте: вопросы, заявки на занятия и обратная связь.",
+  },
   {
     key: "design",
     icon: <Palette />,
@@ -34,7 +41,7 @@ const adminSections = [
     key: "profile",
     icon: <Settings />,
     title: "Основная информация",
-    text: "ФИО, первый экран, описание, стаж, блок “Обо мне” и научная карточка.",
+    text: "ФИО, первый экран, описание, стаж и блок “Обо мне”.",
   },
   {
     key: "advantages",
@@ -81,19 +88,44 @@ const adminSections = [
 ];
 
 function AdminDashboard() {
-  const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState("design");
+  const [activeSection, setActiveSection] = useState("messages");
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const selectedSection = adminSections.find(
     (section) => section.key === activeSection
   );
 
+  const refreshUnreadCount = useCallback(async () => {
+    const { count, error } = await supabase
+      .from("contact_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("is_read", false);
+
+    if (!error && typeof count === "number") {
+      setUnreadCount(count);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshUnreadCount();
+
+    const interval = setInterval(refreshUnreadCount, 20000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [refreshUnreadCount, activeSection]);
+
   async function handleLogout() {
     await supabase.auth.signOut();
-    navigate("/login");
+    window.location.href = "/login";
   }
 
   function renderActiveSection() {
+    if (activeSection === "messages") {
+      return <MessagesManager onUnreadCountChange={setUnreadCount} />;
+    }
+
     if (activeSection === "design") {
       return <DesignManager />;
     }
@@ -147,7 +179,7 @@ function AdminDashboard() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
-      <header className="border-b border-white/10 bg-slate-950/80 px-6 py-5 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/85 px-4 py-4 backdrop-blur-xl sm:px-6 sm:py-5">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300/15 text-cyan-200">
@@ -179,10 +211,10 @@ function AdminDashboard() {
         </div>
       </header>
 
-      <section className="px-6 py-10">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[320px_1fr]">
-          <aside className="h-fit rounded-[2rem] border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-            <div className="mb-4 px-3">
+      <section className="px-4 py-8 sm:px-6 sm:py-10">
+        <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[300px_1fr] lg:gap-8">
+          <aside className="h-fit rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-xl sm:p-4 lg:sticky lg:top-28">
+            <div className="mb-4 hidden px-3 lg:block">
               <h2 className="text-lg font-bold">Разделы</h2>
 
               <p className="mt-1 text-sm text-slate-400">
@@ -190,38 +222,62 @@ function AdminDashboard() {
               </p>
             </div>
 
-            <div className="space-y-2">
-              {adminSections.map((section) => (
-                <button
-                  key={section.key}
-                  type="button"
-                  onClick={() => setActiveSection(section.key)}
-                  className={
-                    activeSection === section.key
-                      ? "flex w-full items-center gap-3 rounded-2xl bg-cyan-300 px-4 py-3 text-left font-semibold text-slate-950"
-                      : "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-300 transition hover:bg-white/10 hover:text-white"
-                  }
-                >
-                  <span
+            {/* На мобильных — горизонтальная лента разделов, на десктопе — вертикальный список */}
+            <nav className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-col lg:gap-2 lg:overflow-visible lg:px-0 lg:pb-0">
+              {adminSections.map((section) => {
+                const isActive = activeSection === section.key;
+                const showBadge = section.key === "messages" && unreadCount > 0;
+
+                return (
+                  <button
+                    key={section.key}
+                    type="button"
+                    onClick={() => setActiveSection(section.key)}
                     className={
-                      activeSection === section.key
-                        ? "flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950/10"
-                        : "flex h-9 w-9 items-center justify-center rounded-xl bg-white/10"
+                      isActive
+                        ? "flex shrink-0 items-center gap-3 rounded-2xl bg-cyan-300 px-4 py-3 text-left font-semibold text-slate-950 lg:w-full lg:shrink"
+                        : "flex shrink-0 items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-300 transition hover:bg-white/10 hover:text-white lg:w-full lg:shrink"
                     }
                   >
-                    {section.icon}
-                  </span>
+                    <span
+                      className={
+                        isActive
+                          ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950/10"
+                          : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10"
+                      }
+                    >
+                      {section.icon}
+                    </span>
 
-                  <span>{section.title}</span>
-                </button>
-              ))}
-            </div>
+                    <span className="whitespace-nowrap">{section.title}</span>
+
+                    {showBadge && (
+                      <span
+                        className={
+                          isActive
+                            ? "ml-auto hidden min-w-6 rounded-full bg-slate-950 px-2 py-0.5 text-center text-xs font-bold text-cyan-200 lg:block"
+                            : "ml-auto hidden min-w-6 rounded-full bg-cyan-300 px-2 py-0.5 text-center text-xs font-bold text-slate-950 lg:block"
+                        }
+                      >
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
           </aside>
 
-          <div className="space-y-8">
-            <div className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-cyan-300/10 to-emerald-300/10 p-8 backdrop-blur-xl">
-              <h2 className="text-3xl font-black">
+          <div className="space-y-6 lg:space-y-8">
+            <div className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-cyan-300/10 to-emerald-300/10 p-6 backdrop-blur-xl sm:p-8">
+              <h2 className="text-2xl font-black sm:text-3xl">
                 {selectedSection?.title}
+
+                {selectedSection?.key === "messages" && unreadCount > 0 && (
+                  <span className="ml-3 inline-flex min-w-8 items-center justify-center rounded-full bg-cyan-300 px-2.5 py-1 align-middle text-sm font-bold text-slate-950">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
               </h2>
 
               <p className="mt-3 max-w-2xl text-slate-300">

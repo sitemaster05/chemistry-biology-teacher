@@ -1,0 +1,13 @@
+# robots.txt — правила для поисковых роботов
+# Сайт учителя химии и биологии — uchitel05.ru
+
+User-agent: *
+Allow: /
+
+# Служебные страницы не индексируем
+Disallow: /admin
+Disallow: /login
+Disallow: /api/
+
+# Карта сайта
+Sitemap: https://uchitel05.ru/sitemap.xml

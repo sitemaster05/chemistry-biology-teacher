@@ -1,7 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  AnimatePresence,
+  motion,
+  useInView,
+  useMotionValue,
+  useSpring,
+} from "framer-motion";
 import { loadSiteDataFromApi } from "../lib/siteDataApi";
 import { normalizeTelegramUrl, safeExternalUrl } from "../lib/contactLinks";
+import { supabase } from "../lib/supabase";
 import {
   ArrowUp,
   Atom,
@@ -84,12 +91,359 @@ const navLinks = [
   { href: "#contacts", label: "Контакты" },
 ];
 
+const lifeElements = [
+  { symbol: "H", number: 1, mass: "1.008", name: "Водород" },
+  { symbol: "C", number: 6, mass: "12.011", name: "Углерод" },
+  { symbol: "N", number: 7, mass: "14.007", name: "Азот" },
+  { symbol: "O", number: 8, mass: "15.999", name: "Кислород" },
+];
+
+const scienceFormulas = [
+  "H₂O",
+  "CO₂",
+  "O₂",
+  "NaCl",
+  "C₆H₁₂O₆",
+  "NH₃",
+  "H₂SO₄",
+  "CH₄",
+  "Fe₂O₃",
+  "KMnO₄",
+  "АТФ",
+  "ДНК",
+  "РНК",
+  "pH 7.0",
+];
+
+// Пузырьки фона: позиция, размер (px), длительность и задержка (сек),
+// дрейф по горизонтали (px) и максимальная прозрачность.
+const backgroundBubbles = [
+  { left: "4%", size: 8, duration: 30, delay: 0, x: 26, opacity: 0.34 },
+  { left: "11%", size: 6, duration: 38, delay: 7, x: -18, opacity: 0.26 },
+  { left: "18%", size: 12, duration: 46, delay: 14, x: 34, opacity: 0.2 },
+  { left: "27%", size: 6, duration: 33, delay: 3, x: -22, opacity: 0.3 },
+  { left: "35%", size: 9, duration: 41, delay: 19, x: 18, opacity: 0.24 },
+  { left: "44%", size: 6, duration: 36, delay: 10, x: -30, opacity: 0.28 },
+  { left: "53%", size: 11, duration: 48, delay: 25, x: 24, opacity: 0.2 },
+  { left: "61%", size: 7, duration: 34, delay: 5, x: -16, opacity: 0.3 },
+  { left: "69%", size: 13, duration: 50, delay: 16, x: 30, opacity: 0.18 },
+  { left: "77%", size: 6, duration: 37, delay: 22, x: -26, opacity: 0.28 },
+  { left: "85%", size: 9, duration: 43, delay: 9, x: 20, opacity: 0.24 },
+  { left: "93%", size: 6, duration: 31, delay: 28, x: -14, opacity: 0.32 },
+];
+
 const sectionMotion = {
   initial: { opacity: 0, y: 34 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, amount: 0.16 },
   transition: { duration: 0.7, ease: "easeOut" },
 };
+
+// Элементы для мини-карточки в bento-сетке «Обо мне»
+const aboutElements = [
+  { symbol: "Ca", number: 20, name: "Кальций" },
+  { symbol: "P", number: 15, name: "Фосфор" },
+  { symbol: "Fe", number: 26, name: "Железо" },
+  { symbol: "Mg", number: 12, name: "Магний" },
+];
+
+/* Счётчик, который «набегает» до значения при появлении на экране.
+   Понимает значения вида «42+», «100+», «24/7». */
+function AnimatedCounter({ value }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const [display, setDisplay] = useState("0");
+
+  useEffect(() => {
+    if (!inView) return;
+
+    const raw = String(value ?? "");
+    const match = raw.match(/^(\d+)(.*)$/);
+
+    if (!match) {
+      setDisplay(raw);
+      return;
+    }
+
+    const target = Number(match[1]);
+    const suffix = match[2];
+    const duration = 1500;
+    const startedAt = performance.now();
+    let frameId;
+
+    const tick = (now) => {
+      const progress = Math.min((now - startedAt) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+
+      setDisplay(`${Math.round(target * eased)}${suffix}`);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = requestAnimationFrame(tick);
+
+    return () => cancelAnimationFrame(frameId);
+  }, [inView, value]);
+
+  return <span ref={ref}>{display}</span>;
+}
+
+/* Карточка со «светом за курсором»: подсветка следует за мышью. */
+function SpotlightCard({ className = "", children, ...props }) {
+  const ref = useRef(null);
+
+  function handleMouseMove(event) {
+    const card = ref.current;
+
+    if (!card) return;
+
+    const rect = card.getBoundingClientRect();
+
+    card.style.setProperty("--mouse-x", `${event.clientX - rect.left}px`);
+    card.style.setProperty("--mouse-y", `${event.clientY - rect.top}px`);
+  }
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={handleMouseMove}
+      className={`spotlight-card ${className}`}
+      {...props}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* Магнитная кнопка: тянется к курсору и плавно возвращается. */
+function MagneticButton({ children, className, ...props }) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 180, damping: 14, mass: 0.4 });
+  const springY = useSpring(y, { stiffness: 180, damping: 14, mass: 0.4 });
+
+  function handleMouseMove(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+
+    x.set((event.clientX - (rect.left + rect.width / 2)) * 0.16);
+    y.set((event.clientY - (rect.top + rect.height / 2)) * 0.22);
+  }
+
+  function handleMouseLeave() {
+    x.set(0);
+    y.set(0);
+  }
+
+  return (
+    <motion.a
+      style={{ x: springX, y: springY }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className={className}
+      {...props}
+    >
+      {children}
+    </motion.a>
+  );
+}
+
+/* 3D-наклон элемента за курсором (для научной панели). */
+function TiltContainer({ children, className = "" }) {
+  const rotateX = useMotionValue(0);
+  const rotateY = useMotionValue(0);
+  const springRotateX = useSpring(rotateX, { stiffness: 140, damping: 18 });
+  const springRotateY = useSpring(rotateY, { stiffness: 140, damping: 18 });
+
+  function handleMouseMove(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const px = (event.clientX - rect.left) / rect.width - 0.5;
+    const py = (event.clientY - rect.top) / rect.height - 0.5;
+
+    rotateY.set(px * 7);
+    rotateX.set(-py * 7);
+  }
+
+  function handleMouseLeave() {
+    rotateX.set(0);
+    rotateY.set(0);
+  }
+
+  return (
+    <motion.div
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        rotateX: springRotateX,
+        rotateY: springRotateY,
+        transformPerspective: 1000,
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* Появление текста по словам — каждое слово «выпрыгивает» из своей маски. */
+function RevealWords({ text, className = "", delay = 0 }) {
+  const words = String(text ?? "").split(" ").filter(Boolean);
+
+  return (
+    <span className={className}>
+      {words.map((word, index) => (
+        <span
+          key={`${word}-${index}`}
+          className="inline-block overflow-hidden align-bottom pb-[0.14em] -mb-[0.14em]"
+        >
+          <motion.span
+            className="inline-block"
+            initial={{ y: "110%" }}
+            animate={{ y: 0 }}
+            transition={{
+              delay: delay + index * 0.07,
+              duration: 0.65,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+          >
+            {word}
+            {index < words.length - 1 ? "\u00A0" : ""}
+          </motion.span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/* Анимированная колба с жидкостью и пузырьками (для bento-карточки). */
+function AnimatedFlask() {
+  return (
+    <div
+      className="relative mx-auto flex h-40 w-40 shrink-0 items-center justify-center sm:h-48 sm:w-48"
+      aria-hidden="true"
+    >
+      <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(103,232,249,0.14),transparent_65%)] blur-xl" />
+
+      <svg viewBox="0 0 100 100" className="relative h-full w-full">
+        <defs>
+          <linearGradient id="flaskLiquid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(103, 232, 249, 0.6)" />
+            <stop offset="100%" stopColor="rgba(110, 231, 183, 0.3)" />
+          </linearGradient>
+        </defs>
+
+        {/* Жидкость */}
+        <path
+          d="M37.5 48 L25.5 69 a6 6 0 0 0 5 9 h39 a6 6 0 0 0 5 -9 L62.5 48 z"
+          fill="url(#flaskLiquid)"
+        />
+
+        {/* Пузырьки */}
+        <circle
+          cx="42"
+          cy="66"
+          r="2.5"
+          className="flask-bubble"
+          fill="rgba(255,255,255,0.55)"
+        />
+        <circle
+          cx="52"
+          cy="61"
+          r="1.8"
+          className="flask-bubble"
+          style={{ animationDelay: "1.1s" }}
+          fill="rgba(255,255,255,0.55)"
+        />
+        <circle
+          cx="58"
+          cy="68"
+          r="2"
+          className="flask-bubble"
+          style={{ animationDelay: "2.2s" }}
+          fill="rgba(255,255,255,0.55)"
+        />
+
+        {/* Контур колбы */}
+        <path
+          d="M42 18 h16 v22 l20 34 a8 8 0 0 1 -7 12 H29 a8 8 0 0 1 -7 -12 l20 -34 z"
+          fill="none"
+          stroke="rgba(255,255,255,0.28)"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+
+        {/* Риски на горлышке */}
+        <line
+          x1="46"
+          y1="24"
+          x2="54"
+          y2="24"
+          stroke="rgba(255,255,255,0.2)"
+          strokeWidth="1.5"
+        />
+        <line
+          x1="46"
+          y1="30"
+          x2="54"
+          y2="30"
+          stroke="rgba(255,255,255,0.2)"
+          strokeWidth="1.5"
+        />
+      </svg>
+    </div>
+  );
+}
+
+/* Контурная бегущая строка дисциплин — лента-разделитель после героя. */
+function KnowledgeMarquee() {
+  const subjects = [
+    "Химия",
+    "Биология",
+    "Генетика",
+    "Экология",
+    "Органическая химия",
+    "Биохимия",
+    "Анатомия",
+    "Ботаника",
+    "Зоология",
+    "Физиология",
+  ];
+
+  return (
+    <div
+      className="relative z-10 overflow-hidden border-y border-white/8 bg-slate-950/45 py-4 backdrop-blur-sm sm:py-5"
+      aria-hidden="true"
+    >
+      <div className="formula-track flex w-max items-center whitespace-nowrap">
+        {[...subjects, ...subjects].map((subject, index) => (
+          <span key={`${subject}-${index}`} className="flex items-center">
+            <span className="marquee-outline-text text-xl font-black uppercase tracking-wider sm:text-2xl">
+              {subject}
+            </span>
+            <span className="mx-8 h-1.5 w-1.5 rounded-full bg-cyan-300/35" />
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* Декоративный разделитель между секциями. */
+function SectionDivider() {
+  return (
+    <div
+      className="relative z-10 mx-auto flex max-w-7xl items-center gap-3 px-4 sm:px-6"
+      aria-hidden="true"
+    >
+      <span className="h-px flex-1 bg-gradient-to-r from-transparent to-white/14" />
+      <span className="h-1.5 w-1.5 rounded-full bg-cyan-300/50" />
+      <span className="h-2.5 w-2.5 rounded-full border border-cyan-300/40" />
+      <span className="h-1.5 w-1.5 rounded-full bg-emerald-300/50" />
+      <span className="h-px flex-1 bg-gradient-to-l from-transparent to-white/14" />
+    </div>
+  );
+}
 
 function EmptyState({ icon: Icon = Sparkles, title, text }) {
   return (
@@ -280,13 +634,30 @@ function getServiceVisual(iconName) {
   );
 }
 
-function SectionTitle({ badge, title, text }) {
+function getSubjectBadgeClass(subject) {
+  if (subject === "Биология") {
+    return "bg-emerald-300/10 text-emerald-200";
+  }
+
+  if (subject === "Химия") {
+    return "bg-cyan-300/10 text-cyan-200";
+  }
+
+  return "bg-blue-300/10 text-blue-200";
+}
+
+function SectionTitle({ badge, title, text, number }) {
   return (
     <motion.div
       {...sectionMotion}
       className="mx-auto mb-12 max-w-3xl text-center"
     >
-      <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-medium text-cyan-200">
+      <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-medium text-cyan-200">
+        {number && (
+          <span className="text-xs font-bold tracking-[0.2em] text-cyan-300/70">
+            {number}
+          </span>
+        )}
         <Sparkles className="h-4 w-4" />
         {badge}
       </div>
@@ -302,39 +673,125 @@ function SectionTitle({ badge, title, text }) {
   );
 }
 
-function FloatingScienceDecor() {
+function ScienceBackground() {
   return (
-    <div className="pointer-events-none fixed inset-0 z-[1] hidden overflow-hidden lg:block">
-      <motion.div
-        animate={{ y: [0, -28, 0], rotate: [0, 12, 0] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute left-[5%] top-[18%] rounded-3xl border border-cyan-300/15 bg-cyan-300/5 p-4 text-cyan-200 backdrop-blur-xl"
-      >
-        <Atom className="h-8 w-8" />
-      </motion.div>
+    <div className="science-bg" aria-hidden="true">
+      {/* Мягкие цветные пятна — «аврора» в цветах темы */}
+      <div className="aurora aurora-one science-bg-anim" />
+      <div className="aurora aurora-two science-bg-anim" />
+      <div className="aurora aurora-three science-bg-anim" />
 
-      <motion.div
-        animate={{ y: [0, 34, 0], rotate: [0, -10, 0] }}
-        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute right-[6%] top-[34%] rounded-3xl border border-emerald-300/15 bg-emerald-300/5 p-4 text-emerald-200 backdrop-blur-xl"
-      >
-        <Dna className="h-8 w-8" />
-      </motion.div>
+      {/* Молекулярная решётка: бензольные кольца и связи */}
+      <MolecularLattice />
 
-      <motion.div
-        animate={{ y: [0, -22, 0], x: [0, 10, 0] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-[18%] left-[8%] rounded-3xl border border-white/10 bg-white/5 p-4 text-cyan-200 backdrop-blur-xl"
-      >
-        <Microscope className="h-8 w-8" />
-      </motion.div>
+      {/* Пузырьки, медленно всплывающие как в растворе */}
+      {backgroundBubbles.map((bubble, index) => (
+        <span
+          key={index}
+          className="science-bubble"
+          style={{
+            left: bubble.left,
+            width: bubble.size,
+            height: bubble.size,
+            animationDuration: `${bubble.duration}s`,
+            animationDelay: `${bubble.delay}s`,
+            "--bubble-x": `${bubble.x}px`,
+            "--bubble-opacity": bubble.opacity,
+          }}
+        />
+      ))}
+
+      {/* Парящие плитки-символы — перенесены из переднего плана в фон,
+          чтобы никогда не перекрывать текст */}
+      <div className="bg-ghost bg-ghost-atom science-bg-anim">
+        <Atom className="h-10 w-10" strokeWidth={1.5} />
+      </div>
+
+      <div className="bg-ghost bg-ghost-dna science-bg-anim">
+        <Dna className="h-9 w-9" strokeWidth={1.5} />
+      </div>
+
+      {/* Крупные водяные знаки — символы науки.
+          На десктопе статичный атом заменяет живая орбита выше,
+          на мобильных остаётся статичный атом */}
+      <div className="bg-watermark bg-watermark-atom science-bg-anim md:hidden">
+        <Atom className="h-full w-full" strokeWidth={1} />
+      </div>
+
+      {/* Анимированная орбита атома — живой водяной знак на заднем плане */}
+      <div className="science-bg-ghost science-bg-anim">
+        <ScienceOrbit className="absolute right-[6%] top-[12%] h-44 w-44 hidden md:block" />
+      </div>
+
+      <div className="bg-watermark bg-watermark-dna science-bg-anim">
+        <Dna className="h-full w-full" strokeWidth={1} />
+      </div>
+
+      <div className="bg-watermark bg-watermark-flask science-bg-anim">
+        <FlaskConical className="h-full w-full" strokeWidth={1} />
+      </div>
     </div>
   );
 }
 
-function ScienceOrbit() {
+function MolecularLattice() {
   return (
-    <div className="science-orbit pointer-events-none absolute -right-8 top-8 hidden h-44 w-44 lg:block">
+    <svg
+      className="bg-lattice science-bg-anim"
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="xMidYMid slice"
+    >
+      <defs>
+        <pattern
+          id="mol-lattice"
+          width="220"
+          height="190"
+          patternUnits="userSpaceOnUse"
+        >
+          <g
+            stroke="var(--site-primary)"
+            strokeOpacity="0.09"
+            strokeWidth="1.1"
+            fill="none"
+          >
+            <polygon points="110,37 162,67 162,127 110,157 58,127 58,67" />
+          </g>
+
+          <g
+            stroke="var(--site-secondary)"
+            strokeOpacity="0.06"
+            strokeWidth="1"
+            fill="none"
+          >
+            <polygon points="110,63 139.4,80 139.4,114 110,131 80.6,114 80.6,80" />
+            <line x1="162" y1="67" x2="220" y2="67" strokeOpacity="0.05" />
+            <line x1="162" y1="127" x2="220" y2="127" strokeOpacity="0.05" />
+            <line x1="58" y1="67" x2="0" y2="67" strokeOpacity="0.05" />
+            <line x1="58" y1="127" x2="0" y2="127" strokeOpacity="0.05" />
+            <line x1="110" y1="157" x2="110" y2="190" strokeOpacity="0.05" />
+          </g>
+
+          <g fill="var(--site-primary)">
+            <circle cx="110" cy="37" r="2.4" fillOpacity="0.16" />
+            <circle cx="162" cy="67" r="2.4" fillOpacity="0.11" />
+            <circle cx="162" cy="127" r="2.4" fillOpacity="0.11" />
+            <circle cx="110" cy="157" r="2.4" fillOpacity="0.16" />
+            <circle cx="58" cy="127" r="2.4" fillOpacity="0.11" />
+            <circle cx="58" cy="67" r="2.4" fillOpacity="0.11" />
+          </g>
+        </pattern>
+      </defs>
+
+      <rect width="100%" height="100%" fill="url(#mol-lattice)" />
+    </svg>
+  );
+}
+
+function ScienceOrbit({
+  className = "absolute -right-8 top-8 hidden h-44 w-44 lg:block",
+}) {
+  return (
+    <div className={`science-orbit pointer-events-none ${className}`}>
       <div className="science-orbit-ring science-orbit-ring-one" />
       <div className="science-orbit-ring science-orbit-ring-two" />
       <div className="science-orbit-core">
@@ -346,60 +803,436 @@ function ScienceOrbit() {
   );
 }
 
-function HeroInsightPanel({ profile, contacts }) {
-  const cityText = contacts.address || contacts.city || "Онлайн-занятия";
+function DnaVisual() {
+  const strandA =
+    "M0,35 Q12.5,15 25,15 Q37.5,15 50,35 Q62.5,55 75,55 Q87.5,55 100,35 Q112.5,15 125,15 Q137.5,15 150,35 Q162.5,55 175,55 Q187.5,55 200,35 Q212.5,15 225,15 Q237.5,15 250,35 Q262.5,55 275,55 Q287.5,55 300,35";
+
+  const strandB =
+    "M0,35 Q12.5,55 25,55 Q37.5,55 50,35 Q62.5,15 75,15 Q87.5,15 100,35 Q112.5,55 125,55 Q137.5,55 150,35 Q162.5,15 175,15 Q187.5,15 200,35 Q212.5,55 225,55 Q237.5,55 250,35 Q262.5,15 275,15 Q287.5,15 300,35";
+
+  const rungs = [25, 75, 125, 175, 225, 275];
 
   return (
-    <div className="premium-panel absolute -left-16 top-14 z-30 hidden max-w-[250px] p-4 xl:-left-24 lg:block">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-300/10 text-cyan-200">
-          <Microscope className="h-5 w-5" />
-        </div>
+    <svg
+      viewBox="0 0 300 70"
+      className="h-auto w-full"
+      role="img"
+      aria-label="Анимированная схема двойной спирали ДНК"
+    >
+      <defs>
+        <linearGradient id="dnaGradientA" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#67e8f9" />
+          <stop offset="100%" stopColor="#6ee7b7" />
+        </linearGradient>
 
-        <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
-            Формат
-          </p>
-          <p className="text-sm font-semibold text-white">{cityText}</p>
-        </div>
-      </div>
+        <linearGradient id="dnaGradientB" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#6ee7b7" />
+          <stop offset="100%" stopColor="#93c5fd" />
+        </linearGradient>
+      </defs>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="text-lg font-black text-cyan-200">
-            {profile.experience_value}
-          </p>
-          <p className="mt-1 text-xs leading-4 text-slate-400">
-            {profile.experience_label}
-          </p>
-        </div>
+      {rungs.map((x) => (
+        <line
+          key={x}
+          x1={x}
+          y1={15}
+          x2={x}
+          y2={55}
+          stroke="rgba(255,255,255,0.22)"
+          strokeWidth={2}
+          strokeLinecap="round"
+          className="dna-rung"
+          style={{ animationDelay: `${(x % 100) / 100}s` }}
+        />
+      ))}
 
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="text-lg font-black text-emerald-200">
-            {profile.materials_value}
-          </p>
-          <p className="mt-1 text-xs leading-4 text-slate-400">
-            {profile.materials_label}
-          </p>
-        </div>
+      <path
+        d={strandA}
+        fill="none"
+        stroke="url(#dnaGradientA)"
+        strokeWidth={2.6}
+        strokeLinecap="round"
+        className="dna-strand dna-strand-a"
+      />
+
+      <path
+        d={strandB}
+        fill="none"
+        stroke="url(#dnaGradientB)"
+        strokeWidth={2.6}
+        strokeLinecap="round"
+        className="dna-strand dna-strand-b"
+      />
+    </svg>
+  );
+}
+
+function FormulaTicker() {
+  return (
+    <div
+      className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/50 py-3"
+      aria-hidden="true"
+    >
+      <div className="formula-track flex w-max items-center whitespace-nowrap text-sm font-semibold tracking-wide text-slate-300">
+        {[...scienceFormulas, ...scienceFormulas].map((formula, index) => (
+          <span key={`${formula}-${index}`} className="flex items-center">
+            <span>{formula}</span>
+            <span className="mx-7 h-1 w-1 rounded-full bg-cyan-300/60" />
+          </span>
+        ))}
       </div>
     </div>
   );
 }
 
-function UserPhotoPlaceholder() {
+function SciencePanel({ profile }) {
   return (
-    <div>
-      <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-white/10 bg-white/10">
-        <Microscope className="h-12 w-12 text-cyan-200" />
+    <div className="relative mx-auto w-full max-w-lg">
+      <div className="absolute -inset-x-6 -inset-y-8 z-0 rounded-[2rem] bg-[linear-gradient(135deg,rgba(103,232,249,0.18),rgba(110,231,183,0.08),rgba(147,197,253,0.16))] blur-2xl" />
+
+      <TiltContainer className="relative z-10">
+        <div className="overflow-hidden rounded-[2rem] border border-white/12 bg-white/10 p-5 shadow-2xl backdrop-blur-2xl sm:p-7">
+        <div className="data-stream absolute inset-x-0 top-0 z-10 h-20 opacity-60" />
+
+        <div className="relative">
+          <div className="mb-5 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Периодическая система
+              </p>
+              <p className="mt-1.5 text-lg font-bold text-white sm:text-xl">
+                Элементы жизни
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-semibold text-emerald-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.9)]" />
+              Химия + Биология
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
+            {lifeElements.map((element, index) => (
+              <motion.div
+                key={element.symbol}
+                animate={{ y: [0, -6, 0] }}
+                transition={{
+                  duration: 4 + index,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="rounded-2xl border border-cyan-300/15 bg-slate-950/60 p-2 text-center backdrop-blur transition hover:border-cyan-300/40 sm:p-3"
+              >
+                <p className="text-[10px] font-semibold text-slate-500">
+                  {element.number}
+                </p>
+                <p className="text-xl font-black text-cyan-200 sm:text-2xl">
+                  {element.symbol}
+                </p>
+                <p className="text-[10px] tabular-nums text-slate-500">
+                  {element.mass}
+                </p>
+                <p className="mt-1 truncate text-[10px] text-slate-400">
+                  {element.name}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-5">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Структура
+              </p>
+              <p className="text-sm font-semibold text-emerald-200">ДНК</p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
+              <DnaVisual />
+            </div>
+          </div>
+
+          <FormulaTicker />
+
+          <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/72 p-5 backdrop-blur-xl">
+            <p className="text-sm text-cyan-200">{profile.profession}</p>
+            <p className="mt-1 break-words text-2xl font-black text-white">
+              {profile.full_name}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              {profile.science_card_title}
+            </p>
+          </div>
+        </div>
+        </div>
+      </TiltContainer>
+    </div>
+  );
+}
+
+function ContactForm() {
+  const [form, setForm] = useState({
+    name: "",
+    contact: "",
+    message: "",
+    company: "",
+  });
+
+  const [status, setStatus] = useState("idle");
+  const [errorText, setErrorText] = useState("");
+  // Куда реально доставлено сообщение: { email: boolean, db: boolean }
+  const [delivery, setDelivery] = useState(null);
+
+  function updateField(field, value) {
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  function resetForm() {
+    setForm({ name: "", contact: "", message: "", company: "" });
+    setErrorText("");
+    setStatus("idle");
+    setDelivery(null);
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    if (status === "sending") return;
+
+    const name = form.name.trim();
+    const contact = form.contact.trim();
+    const message = form.message.trim();
+
+    if (name.length < 2) {
+      setErrorText("Пожалуйста, укажите ваше имя.");
+      return;
+    }
+
+    if (contact.length < 3) {
+      setErrorText(
+        "Укажите телефон, email или ник в Telegram — чтобы я могла ответить."
+      );
+      return;
+    }
+
+    if (message.length < 10) {
+      setErrorText(
+        "Сообщение слишком короткое — напишите чуть подробнее (от 10 символов)."
+      );
+      return;
+    }
+
+    setErrorText("");
+    setStatus("sending");
+
+    // Скрытое поле-приманка для спам-ботов: люди его не видят и не заполняют.
+    if (form.company.trim()) {
+      resetForm();
+      setStatus("success");
+      return;
+    }
+
+    // Сообщение уходит двумя путями:
+    //   1) письмом на почту учителя через серверную функцию (если настроена);
+    //   2) в базу Supabase — это раздел «Сообщения» в админ-панели.
+    // Успех = сработал хотя бы один путь.
+    let emailSent = false;
+    let dbSaved = false;
+    let dbErrorText = "";
+
+    try {
+      const emailResponse = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, contact, message }),
+      });
+
+      if (emailResponse.ok) {
+        const emailData = await emailResponse.json();
+        emailSent = Boolean(emailData.ok);
+      }
+    } catch {
+      // Письмо не отправилось (например, локальный запуск без Vercel) —
+      // не страшно: сообщение всё равно сохранится в админ-панели.
+    }
+
+    const { error } = await supabase
+      .from("contact_messages")
+      .insert({ name, contact, message });
+
+    if (!error) {
+      dbSaved = true;
+    } else {
+      dbErrorText = `${error.message || ""} ${error.code || ""}`;
+    }
+
+    if (emailSent || dbSaved) {
+      setDelivery({ email: emailSent, db: dbSaved });
+      setForm({ name: "", contact: "", message: "", company: "" });
+      setStatus("success");
+      return;
+    }
+
+    const missingTable =
+      /contact_messages|PGRST205|does not exist|not found|404/i.test(
+        dbErrorText
+      );
+
+    setErrorText(
+      missingTable
+        ? "Форма ещё не подключена к базе: один раз выполните скрипт supabase-setup.sql в Supabase (SQL Editor) — после этого сообщения начнут сохраняться."
+        : "Не удалось отправить сообщение. Попробуйте позже или напишите напрямую через мессенджеры и телефон."
+    );
+
+    setStatus("error");
+  }
+
+  const inputClassName =
+    "w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3.5 text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-300/40 focus:ring-2 focus:ring-cyan-300/20";
+
+  if (status === "success") {
+    return (
+      <div className="flex h-full flex-col rounded-3xl border border-white/10 bg-slate-950/50 p-6 sm:p-7">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.94 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="flex flex-1 flex-col items-center justify-center py-8 text-center"
+        >
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-300/10 text-emerald-200 ring-1 ring-emerald-300/30">
+            <CheckCircle2 className="h-8 w-8" />
+          </div>
+
+          <h3 className="text-xl font-bold text-white">
+            Сообщение отправлено!
+          </h3>
+
+          <p className="mt-3 max-w-sm text-sm leading-6 text-slate-400">
+            {delivery?.email && delivery?.db
+              ? "Спасибо! Ваше сообщение доставлено на почту и в панель администратора — отвечу в ближайшее время."
+              : delivery?.email
+                ? "Спасибо! Ваше письмо доставлено на почту — отвечу в ближайшее время."
+                : "Спасибо! Ваше сообщение сохранено в панели администратора — отвечу в ближайшее время."}
+          </p>
+
+          <button
+            type="button"
+            onClick={resetForm}
+            className="mt-7 rounded-full border border-white/15 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+          >
+            Отправить ещё одно
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-3xl border border-white/10 bg-slate-950/50 p-6 sm:p-7">
+      <div className="mb-6 flex items-center gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+          <Send className="h-5 w-5" />
+        </div>
+
+        <div>
+          <h3 className="text-lg font-bold text-white sm:text-xl">
+            Написать сообщение
+          </h3>
+          <p className="text-sm text-slate-400">
+            Обычно отвечаю в течение дня
+          </p>
+        </div>
       </div>
 
-      <h3 className="mt-6 text-2xl font-black">Место для фото</h3>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <label className="block">
+          <span className="mb-2 block text-sm text-slate-300">Ваше имя</span>
 
-      <p className="mt-3 max-w-sm text-sm leading-6 text-slate-300">
-        Загрузи фото преподавателя в админке: “Основная информация” → “Фото
-        преподавателя”.
-      </p>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(event) => updateField("name", event.target.value)}
+            placeholder="Например: Мария"
+            maxLength={80}
+            className={inputClassName}
+            required
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-2 block text-sm text-slate-300">
+            Телефон, email или Telegram
+          </span>
+
+          <input
+            type="text"
+            value={form.contact}
+            onChange={(event) => updateField("contact", event.target.value)}
+            placeholder="+7 999 123-45-67 / @username / mail@example.com"
+            maxLength={120}
+            className={inputClassName}
+            required
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-2 block text-sm text-slate-300">Сообщение</span>
+
+          <textarea
+            value={form.message}
+            onChange={(event) => updateField("message", event.target.value)}
+            placeholder="Здравствуйте! Хочу уточнить про занятия по химии для 9 класса..."
+            rows={4}
+            maxLength={2000}
+            className={`${inputClassName} resize-none`}
+            required
+          />
+        </label>
+
+        {/* Скрытое поле-приманка для спам-ботов */}
+        <input
+          type="text"
+          value={form.company}
+          onChange={(event) => updateField("company", event.target.value)}
+          name="company"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-[9999px] h-0 w-0 opacity-0"
+        />
+
+        {errorText && (
+          <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm leading-6 text-red-200">
+            {errorText}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={status === "sending"}
+          className="btn-shine inline-flex w-full items-center justify-center gap-2 rounded-full bg-cyan-300 px-7 py-4 text-center font-bold text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {status === "sending" ? (
+            <>
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-950/30 border-t-slate-950" />
+              Отправляем...
+            </>
+          ) : (
+            <>
+              <Send className="h-5 w-5" />
+              Отправить сообщение
+            </>
+          )}
+        </button>
+
+        <p className="text-center text-xs leading-5 text-slate-500">
+          Нажимая «Отправить сообщение», вы соглашаетесь на обработку
+          указанных данных только для обратной связи.
+        </p>
+      </form>
     </div>
   );
 }
@@ -450,7 +1283,7 @@ function Home() {
       setHasDisplayData(true);
       setLoadError("");
     } catch (error) {
-      console.error("Ошибка загрузки данных сайта через Vercel API:", error);
+      console.error("Ошибка загрузки данных сайта:", error);
       setLoadError("Не удалось загрузить актуальные данные сайта.");
     } finally {
       setLoading(false);
@@ -481,7 +1314,7 @@ function Home() {
       setScrollProgress(Math.min(Math.max(nextProgress, 0), 1));
     }
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
 
     return () => {
@@ -507,6 +1340,7 @@ function Home() {
   const mapHref = safeExternalUrl(contacts.map_url);
 
   const overlayOpacity = Number(profile.background_overlay_opacity ?? 0.72);
+  const currentYear = new Date().getFullYear();
 
   function closeMenu() {
     setIsMenuOpen(false);
@@ -544,6 +1378,9 @@ function Home() {
 
   return (
     <main className="site-canvas min-h-screen overflow-hidden bg-slate-950 text-white">
+      {/* Зернистая плёнка — премиальная текстура поверх всего сайта */}
+      <div className="grain-overlay" aria-hidden="true" />
+
       <div className="fixed left-0 top-0 z-[70] h-1 w-full bg-slate-950/40">
         <motion.div
           className="h-full bg-gradient-to-r from-cyan-300 via-emerald-300 to-blue-300"
@@ -568,46 +1405,47 @@ function Home() {
         </div>
       )}
 
-      <FloatingScienceDecor />
+      {/* Научный фон: аврора, молекулярная решётка, пузырьки, водяные знаки.
+          Слой с z-index: -1 — весь контент разделов (z-10) поверх него. */}
+      <ScienceBackground />
 
       <div className="pointer-events-none fixed inset-0 z-0">
         <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(14,165,233,0.10),transparent_28%,rgba(16,185,129,0.08)_52%,transparent_78%),linear-gradient(to_bottom,rgba(15,23,42,0.24),rgba(2,6,23,0.94))]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:72px_72px] opacity-25" />
       </div>
 
       <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/78 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-3.5">
           <a href="#" className="flex items-center gap-3" onClick={closeMenu}>
             <motion.div
               whileHover={{ rotate: 12, scale: 1.05 }}
-              className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-400/15 ring-1 ring-cyan-300/30"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/15 ring-1 ring-cyan-300/30 sm:h-11 sm:w-11"
             >
-              <Atom className="h-6 w-6 text-cyan-200" />
+              <Atom className="h-5 w-5 text-cyan-200 sm:h-6 sm:w-6" />
             </motion.div>
 
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500 sm:text-xs">
                 Учитель
               </p>
-              <p className="font-semibold text-white">
+              <p className="truncate text-sm font-semibold text-white sm:text-base">
                 Химия &amp; Биология
               </p>
             </div>
           </a>
 
-          <nav className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 text-sm text-slate-300 md:flex">
+          <nav className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 text-sm text-slate-300 lg:flex">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="rounded-full px-4 py-2 transition hover:bg-white/8 hover:text-cyan-200"
+                className="rounded-full px-3.5 py-2 transition hover:bg-white/8 hover:text-cyan-200 xl:px-4"
               >
                 {link.label}
               </a>
             ))}
           </nav>
 
-          <div className="hidden items-center gap-3 md:flex">
+          <div className="hidden items-center gap-3 lg:flex">
             <a
               href="#contacts"
               className="rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-200"
@@ -619,7 +1457,7 @@ function Home() {
           <button
             type="button"
             onClick={() => setIsMenuOpen(true)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white md:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white sm:h-11 sm:w-11 lg:hidden"
             aria-label="Открыть меню"
           >
             <Menu className="h-6 w-6" />
@@ -633,7 +1471,7 @@ function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-xl md:hidden"
+            className="fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-xl lg:hidden"
           >
             <motion.div
               initial={{ x: "100%" }}
@@ -650,7 +1488,7 @@ function Home() {
 
                   <div>
                     <p className="text-sm text-slate-400">Меню сайта</p>
-                    <p className="font-semibold text-white">Science CMS</p>
+                    <p className="font-semibold text-white">Химия &amp; Биология</p>
                   </div>
                 </div>
 
@@ -685,13 +1523,37 @@ function Home() {
               >
                 Связаться
               </a>
+
+              <div className="mt-auto space-y-3 pt-8">
+                {telegramHref && (
+                  <a
+                    href={telegramHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-6 py-3.5 text-sm font-semibold text-cyan-100"
+                  >
+                    <Send className="h-4 w-4" />
+                    Написать в Telegram
+                  </a>
+                )}
+
+                {contacts.phone && (
+                  <a
+                    href={phoneHref}
+                    className="flex items-center justify-center gap-2 rounded-full border border-white/10 px-6 py-3.5 text-sm font-semibold text-slate-200"
+                  >
+                    <Phone className="h-4 w-4" />
+                    {contacts.phone}
+                  </a>
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <section className="relative z-10 px-5 py-16 sm:px-6 md:py-24">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:min-h-[calc(100vh-84px)] lg:grid-cols-[1.08fr_0.92fr]">
+      <section className="relative z-10 px-4 py-14 sm:px-6 md:py-20 lg:py-24">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:min-h-[calc(100vh-84px)] lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
           <motion.div
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
@@ -723,12 +1585,25 @@ function Home() {
               {profile.hero_badge}
             </motion.div>
 
-            <h1 className="max-w-4xl text-4xl font-black leading-[1.04] tracking-tight text-white sm:text-5xl md:text-7xl">
-              {profile.full_name}{" "}
+            <h1 className="max-w-4xl break-words text-4xl font-black leading-[1.06] tracking-tight text-white sm:text-5xl md:text-6xl xl:text-7xl">
+              <RevealWords text={profile.full_name} delay={0.1} />
+
               <span className="mt-3 block text-3xl leading-tight text-slate-100 md:text-5xl">
-                {profile.hero_title}{" "}
-                <span className="bg-gradient-to-r from-cyan-200 via-emerald-200 to-blue-200 bg-clip-text text-transparent">
-                  {profile.hero_highlight}
+                <RevealWords text={profile.hero_title} delay={0.3} />{" "}
+
+                <span className="inline-block overflow-hidden align-bottom pb-[0.14em] -mb-[0.14em]">
+                  <motion.span
+                    className="hero-gradient-text inline-block"
+                    initial={{ y: "110%" }}
+                    animate={{ y: 0 }}
+                    transition={{
+                      delay: 0.5,
+                      duration: 0.7,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
+                  >
+                    {profile.hero_highlight}
+                  </motion.span>
                 </span>
               </span>
             </h1>
@@ -737,25 +1612,23 @@ function Home() {
               {profile.hero_description}
             </p>
 
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <motion.a
-                whileHover={{ y: -3, scale: 1.02 }}
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <MagneticButton
                 href="#contacts"
-                className="rounded-full bg-cyan-300 px-7 py-4 text-center font-bold text-slate-950 shadow-xl shadow-cyan-950/30 transition hover:bg-cyan-200"
+                className="btn-shine inline-block rounded-full bg-cyan-300 px-7 py-4 text-center font-bold text-slate-950 shadow-xl shadow-cyan-950/30 transition hover:bg-cyan-200"
               >
                 Записаться на занятие
-              </motion.a>
+              </MagneticButton>
 
-              <motion.a
-                whileHover={{ y: -3, scale: 1.02 }}
+              <MagneticButton
                 href="#materials"
-                className="rounded-full border border-white/15 bg-white/5 px-7 py-4 text-center font-bold text-white backdrop-blur transition hover:bg-white/10"
+                className="inline-block rounded-full border border-white/15 bg-white/5 px-7 py-4 text-center font-bold text-white backdrop-blur transition hover:bg-white/10"
               >
                 Посмотреть материалы
-              </motion.a>
+              </MagneticButton>
             </div>
 
-            <div className="mt-10 grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="mt-8 grid max-w-2xl grid-cols-3 gap-2.5 sm:gap-3">
               {[
                 [profile.experience_value, profile.experience_label],
                 [profile.materials_value, profile.materials_label],
@@ -766,25 +1639,27 @@ function Home() {
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.25 + index * 0.08, duration: 0.5 }}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur"
+                  className="rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur sm:p-4"
                 >
                   <p
                     className={
                       index === 0
-                        ? "text-3xl font-black text-cyan-200"
+                        ? "text-2xl font-black text-cyan-200 sm:text-3xl"
                         : index === 1
-                          ? "text-3xl font-black text-emerald-200"
-                          : "text-3xl font-black text-blue-200"
+                          ? "text-2xl font-black text-emerald-200 sm:text-3xl"
+                          : "text-2xl font-black text-blue-200 sm:text-3xl"
                     }
                   >
-                    {value}
+                    <AnimatedCounter value={value} />
                   </p>
-                  <p className="mt-1 text-sm leading-5 text-slate-400">{label}</p>
+                  <p className="mt-1 break-words text-xs leading-4 text-slate-400 sm:text-sm sm:leading-5">
+                    {label}
+                  </p>
                 </motion.div>
               ))}
             </div>
 
-            <div className="mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
+            <div className="mt-6 grid max-w-2xl grid-cols-3 gap-2.5 sm:gap-3">
               {[
                 ["01", "Разбор темы простым языком"],
                 ["02", "Схемы, задания и практика"],
@@ -792,10 +1667,10 @@ function Home() {
               ].map(([number, text]) => (
                 <div
                   key={number}
-                  className="rounded-2xl border border-white/10 bg-slate-950/35 p-4 backdrop-blur"
+                  className="rounded-2xl border border-white/10 bg-slate-950/35 p-3 backdrop-blur sm:p-4"
                 >
                   <p className="text-xs font-bold text-cyan-200">{number}</p>
-                  <p className="mt-2 text-sm leading-5 text-slate-300">
+                  <p className="mt-1.5 text-xs leading-4 text-slate-300 sm:mt-2 sm:text-sm sm:leading-5">
                     {text}
                   </p>
                 </div>
@@ -809,91 +1684,109 @@ function Home() {
             transition={{ duration: 0.85, ease: "easeOut" }}
             className="relative lg:justify-self-end"
           >
-            <div className="relative mx-auto max-w-lg">
-              <ScienceOrbit />
-              <HeroInsightPanel profile={profile} contacts={contacts} />
-
-              <div className="absolute -inset-x-6 -inset-y-8 z-0 rounded-[2rem] bg-[linear-gradient(135deg,rgba(103,232,249,0.18),rgba(110,231,183,0.08),rgba(147,197,253,0.16))] blur-2xl" />
-
-              <div className="relative z-10 overflow-hidden rounded-[2rem] border border-white/12 bg-white/10 p-3 shadow-2xl backdrop-blur-2xl">
-                <div className="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-900/70">
-                  <div className="data-stream absolute inset-x-0 top-0 z-10 h-24 opacity-70" />
-
-                  {profile.hero_photo_url ? (
-                    <img
-                      src={profile.hero_photo_url}
-                      alt={profile.full_name}
-                      className="h-[460px] w-full object-cover sm:h-[560px]"
-                    />
-                  ) : (
-                    <div className="flex h-[460px] w-full flex-col items-center justify-center bg-gradient-to-br from-cyan-300/20 via-emerald-300/10 to-blue-300/20 p-8 text-center sm:h-[560px]">
-                      <UserPhotoPlaceholder />
-                    </div>
-                  )}
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
-
-                  <div className="absolute bottom-4 left-4 right-4 rounded-2xl border border-white/10 bg-slate-950/72 p-5 backdrop-blur-xl">
-                    <p className="text-sm text-cyan-200">{profile.profession}</p>
-                    <p className="mt-1 text-2xl font-black">
-                      {profile.full_name}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-300">
-                      {profile.science_card_title}
-                    </p>
-                  </div>
-
-                  <motion.div
-                    animate={{ y: [0, -12, 0], rotate: [0, 8, 0] }}
-                    transition={{ duration: 5, repeat: Infinity }}
-                    className="absolute -right-3 top-8 rounded-3xl bg-cyan-300 p-5 text-slate-950 shadow-xl"
-                  >
-                    <Atom className="h-9 w-9" />
-                  </motion.div>
-
-                  <motion.div
-                    animate={{ y: [0, 12, 0], rotate: [0, -8, 0] }}
-                    transition={{ duration: 5.5, repeat: Infinity }}
-                    className="absolute -left-3 bottom-28 rounded-3xl bg-emerald-300 p-5 text-slate-950 shadow-xl"
-                  >
-                    <Dna className="h-9 w-9" />
-                  </motion.div>
-                </div>
-              </div>
-            </div>
+            <SciencePanel profile={profile} />
           </motion.div>
         </div>
       </section>
 
+      <KnowledgeMarquee />
+
       <motion.section
         id="about"
         {...sectionMotion}
-        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
+        className="relative z-10 px-4 py-14 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
             badge="Обо мне"
+            number="01"
             title={profile.about_title}
             text={profile.about_text}
           />
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <motion.div
+          <div className="grid gap-5 md:grid-cols-6">
+            {/* Мой подход — большая карточка с анимированной колбой */}
+            <SpotlightCard
               whileHover={{ y: -6 }}
-              className="premium-panel p-7 md:p-8"
+              className="premium-panel p-6 sm:p-7 md:col-span-4 md:p-8"
             >
-              <h3 className="text-2xl font-bold">{profile.approach_title}</h3>
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+                    <FlaskConical className="h-6 w-6" />
+                  </div>
 
-              <p className="mt-4 leading-8 text-slate-300">
-                {profile.approach_text}
+                  <h3 className="text-xl font-bold sm:text-2xl">
+                    {profile.approach_title}
+                  </h3>
+
+                  <p className="mt-4 leading-8 text-slate-300">
+                    {profile.approach_text}
+                  </p>
+                </div>
+
+                <div className="mx-auto shrink-0 sm:mx-0">
+                  <AnimatedFlask />
+                </div>
+              </div>
+            </SpotlightCard>
+
+            {/* Химия внутри нас — мини-плитки элементов */}
+            <SpotlightCard
+              whileHover={{ y: -6 }}
+              className="premium-panel p-6 md:col-span-2"
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Микроэлементы
               </p>
-            </motion.div>
 
-            <motion.div
+              <p className="mt-1.5 text-lg font-bold text-white">
+                Химия внутри нас
+              </p>
+
+              <div className="mt-5 grid grid-cols-2 gap-2.5">
+                {aboutElements.map((element, index) => (
+                  <motion.div
+                    key={element.symbol}
+                    animate={{ y: [0, -5, 0] }}
+                    transition={{
+                      duration: 3.6 + index * 0.7,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="rounded-xl border border-white/10 bg-slate-950/50 p-2.5 text-center"
+                  >
+                    <p className="text-[9px] font-semibold text-slate-500">
+                      {element.number}
+                    </p>
+                    <p className="text-lg font-black text-emerald-200">
+                      {element.symbol}
+                    </p>
+                    <p className="mt-0.5 truncate text-[9px] text-slate-400">
+                      {element.name}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+
+              <p className="mt-4 text-xs leading-5 text-slate-500">
+                Кальций, фосфор, железо и магний — элементы, без которых не
+                работает ни один организм.
+              </p>
+            </SpotlightCard>
+
+            {/* Что получает ученик */}
+            <SpotlightCard
               whileHover={{ y: -6 }}
-              className="premium-panel p-7 md:p-8"
+              className="premium-panel p-6 sm:p-7 md:col-span-3"
             >
-              <h3 className="text-2xl font-bold">Что получает ученик</h3>
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-300/10 text-emerald-200">
+                <CheckCircle2 className="h-6 w-6" />
+              </div>
+
+              <h3 className="text-xl font-bold sm:text-2xl">
+                Что получает ученик
+              </h3>
 
               <div className="mt-5 space-y-4">
                 {advantages.length > 0 ? (
@@ -916,19 +1809,42 @@ function Home() {
                   </p>
                 )}
               </div>
-            </motion.div>
+            </SpotlightCard>
+
+            {/* Цитата */}
+            <SpotlightCard
+              whileHover={{ y: -6 }}
+              className="premium-panel overflow-hidden p-6 sm:p-7 md:col-span-3"
+            >
+              <div className="relative flex h-full flex-col">
+                <span className="pointer-events-none absolute -top-4 left-0 select-none text-8xl font-black leading-none text-cyan-300/10">
+                  “
+                </span>
+
+                <p className="relative pt-8 text-lg font-medium leading-8 text-slate-200">
+                  {profile.science_card_text}
+                </p>
+
+                <p className="mt-auto pt-6 text-sm text-slate-500">
+                  — {profile.full_name}, {profile.profession}
+                </p>
+              </div>
+            </SpotlightCard>
           </div>
         </div>
       </motion.section>
 
+      <SectionDivider />
+
       <motion.section
         id="services"
         {...sectionMotion}
-        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
+        className="relative z-10 px-4 py-14 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
             badge="Направления"
+            number="02"
             title="Чем я могу помочь"
             text="Направления работы, которые можно редактировать через админ-панель."
           />
@@ -942,7 +1858,7 @@ function Home() {
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {services.map((service, index) => (
-                <motion.div
+                <SpotlightCard
                   key={service.id || service.title}
                   initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -954,33 +1870,38 @@ function Home() {
                   {getServiceVisual(service.icon)}
 
                   <div className="mt-5 flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
                       {getServiceIcon(service.icon)}
                     </div>
 
-                    <h3 className="text-xl font-bold">{service.title}</h3>
+                    <h3 className="text-lg font-bold sm:text-xl">
+                      {service.title}
+                    </h3>
                   </div>
 
                   <p className="mt-3 text-sm leading-7 text-slate-300">
                     {service.text}
                   </p>
-                </motion.div>
+                </SpotlightCard>
               ))}
             </div>
           )}
         </div>
       </motion.section>
 
+      <SectionDivider />
+
       <motion.section
         id="materials"
         {...sectionMotion}
-        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
+        className="relative z-10 px-4 py-14 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
             badge="Материалы"
+            number="03"
             title="Полезные учебные материалы"
-            text="Материалы добавляются через админ-панель и автоматически появляются на сайте."
+            text="Конспекты, таблицы и схемы — добавляются через админ-панель и сразу появляются на сайте."
           />
 
           {loading && (
@@ -996,56 +1917,64 @@ function Home() {
               text="Здесь удобно показывать конспекты, таблицы и ссылки, когда они появятся в админке."
             />
           ) : (
-            <div className="grid gap-5 md:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {materials.map((item, index) => {
                 const materialUrl = safeExternalUrl(item.link_url);
 
                 return (
-                  <motion.div
+                  <SpotlightCard
                     key={item.id || item.title}
                     initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: index * 0.08, duration: 0.55 }}
                     whileHover={{ y: -8 }}
-                    className="premium-card p-6"
+                    className="premium-card flex flex-col p-6"
                   >
-                <div className="mb-5 flex items-center justify-between gap-4">
-                  <span className="rounded-full bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">
-                    {item.subject}
-                  </span>
+                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                      <span
+                        className={`rounded-full px-4 py-2 text-sm ${getSubjectBadgeClass(
+                          item.subject
+                        )}`}
+                      >
+                        {item.subject}
+                      </span>
 
-                  {item.grade && (
-                    <span className="text-sm text-slate-400">
-                      {item.grade}
-                    </span>
-                  )}
-                </div>
+                      {item.grade && (
+                        <span className="text-sm text-slate-400">
+                          {item.grade}
+                        </span>
+                      )}
+                    </div>
 
-                <h3 className="text-2xl font-bold">{item.title}</h3>
+                    <h3 className="text-xl font-bold sm:text-2xl">
+                      {item.title}
+                    </h3>
 
-                {item.description && (
-                  <p className="mt-4 leading-7 text-slate-300">
-                    {item.description}
-                  </p>
-                )}
+                    {item.description && (
+                      <p className="mt-4 leading-7 text-slate-300">
+                        {item.description}
+                      </p>
+                    )}
 
-                {materialUrl ? (
-                  <a
-                    href={materialUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-                  >
-                    Открыть материал
-                    <ChevronRight className="h-4 w-4" />
-                  </a>
-                ) : (
-                  <span className="mt-6 inline-block rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-slate-400">
-                    Материал без ссылки
-                  </span>
-                )}
-                  </motion.div>
+                    <div className="mt-auto pt-6">
+                      {materialUrl ? (
+                        <a
+                          href={materialUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                        >
+                          Открыть материал
+                          <ChevronRight className="h-4 w-4" />
+                        </a>
+                      ) : (
+                        <span className="inline-block rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-slate-400">
+                          Материал без ссылки
+                        </span>
+                      )}
+                    </div>
+                  </SpotlightCard>
                 );
               })}
             </div>
@@ -1053,14 +1982,17 @@ function Home() {
         </div>
       </motion.section>
 
+      <SectionDivider />
+
       <motion.section
         id="achievements"
         {...sectionMotion}
-        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
+        className="relative z-10 px-4 py-14 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
             badge="Достижения"
+            number="04"
             title="Опыт, развитие и результаты"
             text="Сертификаты, методические разработки, участие в проектах и образовательные достижения."
           />
@@ -1072,9 +2004,9 @@ function Home() {
               text="Этот блок можно превратить в сильное доверительное доказательство: сертификаты, проекты и результаты учеников."
             />
           ) : (
-            <div className="grid gap-5 md:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {achievements.map((achievement, index) => (
-                <motion.div
+                <SpotlightCard
                   key={achievement.id || achievement.title}
                   initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -1098,21 +2030,24 @@ function Home() {
                   <p className="mt-3 text-sm leading-7 text-slate-300">
                     {achievement.text || achievement.description}
                   </p>
-                </motion.div>
+                </SpotlightCard>
               ))}
             </div>
           )}
         </div>
       </motion.section>
 
+      <SectionDivider />
+
       <motion.section
         id="gallery"
         {...sectionMotion}
-        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
+        className="relative z-10 px-4 py-14 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
             badge="Галерея"
+            number="05"
             title="Фото из учебной практики"
             text="Здесь можно показать кабинет, уроки, проекты, мероприятия, лабораторные работы и учебные материалы."
           />
@@ -1124,9 +2059,9 @@ function Home() {
               text="Когда появятся снимки кабинета, уроков или проектов, они аккуратно лягут в эту сетку."
             />
           ) : (
-            <div className="grid gap-5 md:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {gallery.map((item, index) => (
-                <motion.div
+                <SpotlightCard
                   key={item.id}
                   initial={{ opacity: 0, scale: 0.94 }}
                   whileInView={{ opacity: 1, scale: 1 }}
@@ -1139,7 +2074,8 @@ function Home() {
                     <img
                       src={item.image_url}
                       alt={item.title || "Фото галереи"}
-                      className="h-72 w-full object-cover transition duration-700 group-hover:scale-110"
+                      loading="lazy"
+                      className="h-64 w-full object-cover transition duration-700 group-hover:scale-110 sm:h-72"
                     />
 
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-80" />
@@ -1161,78 +2097,111 @@ function Home() {
                       </p>
                     )}
                   </div>
-                </motion.div>
+                </SpotlightCard>
               ))}
             </div>
           )}
         </div>
       </motion.section>
 
+      <SectionDivider />
+
       <motion.section
+        id="reviews"
         {...sectionMotion}
-        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
+        className="relative z-10 px-4 py-14 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
           <SectionTitle
             badge="Отзывы"
+            number="06"
             title="Что говорят ученики и родители"
             text="Отзывы помогают показать подход к обучению и реальные результаты."
           />
 
-          <div className="grid gap-5 md:grid-cols-2">
-            {reviews.map((review, index) => {
-              const rating = Math.min(Math.max(Number(review.rating || 5), 1), 5);
+          {reviews.length === 0 ? (
+            <EmptyState
+              icon={MessageCircle}
+              title="Отзывов пока нет"
+              text="Добавьте отзывы в админ-панели — они укрепляют доверие и показывают результаты."
+            />
+          ) : (
+            <div className="grid gap-5 md:grid-cols-2">
+              {reviews.map((review, index) => {
+                const rating = Math.min(
+                  Math.max(Number(review.rating || 5), 1),
+                  5
+                );
 
-              return (
-                <motion.div
-                  key={review.id || review.name}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.08, duration: 0.55 }}
-                  whileHover={{ y: -8 }}
-                  className="premium-card p-7 md:p-8"
-                >
-                  <div className="mb-4 flex gap-1 text-yellow-200">
-                    {Array.from({ length: rating }).map((_, starIndex) => (
-                      <Star
-                        key={starIndex}
-                        className="h-5 w-5 fill-current"
-                      />
-                    ))}
-                  </div>
+                const initials = review.name
+                  .trim()
+                  .split(/\s+/)
+                  .map((word) => word[0])
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase();
 
-                  <p className="leading-8 text-slate-300">“{review.text}”</p>
+                return (
+                  <SpotlightCard
+                    key={review.id || review.name}
+                    initial={{ opacity: 0, y: 24 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.08, duration: 0.55 }}
+                    whileHover={{ y: -8 }}
+                    className="premium-card p-6 sm:p-7 md:p-8"
+                  >
+                    <div className="mb-4 flex gap-1 text-yellow-200">
+                      {Array.from({ length: rating }).map((_, starIndex) => (
+                        <Star
+                          key={starIndex}
+                          className="h-5 w-5 fill-current"
+                        />
+                      ))}
+                    </div>
 
-                  <p className="mt-5 font-bold text-white">{review.name}</p>
+                    <p className="leading-8 text-slate-300">“{review.text}”</p>
 
-                  {review.role && (
-                    <p className="mt-1 text-sm text-slate-400">
-                      {review.role}
-                    </p>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
+                    <div className="mt-5 flex items-center gap-3">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300/20 to-emerald-300/20 text-sm font-bold text-cyan-200 ring-1 ring-white/10">
+                        {initials}
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="font-bold text-white">{review.name}</p>
+
+                        {review.role && (
+                          <p className="mt-0.5 text-sm text-slate-400">
+                            {review.role}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </SpotlightCard>
+                );
+              })}
+            </div>
+          )}
         </div>
       </motion.section>
+
+      <SectionDivider />
 
       <motion.section
         id="contacts"
         {...sectionMotion}
-        className="relative z-10 px-5 py-18 sm:px-6 md:py-20"
+        className="relative z-10 px-4 py-14 sm:px-6 md:py-20"
       >
         <div className="mx-auto max-w-7xl">
-          <div className="premium-panel overflow-hidden p-7 md:p-12">
-            <div className="grid gap-10 md:grid-cols-2">
+          <div className="premium-panel overflow-hidden p-6 sm:p-7 md:p-12">
+            <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12">
               <div>
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">
                   <MessageCircle className="h-4 w-4" />
                   Контакты
                 </div>
 
-                <h2 className="text-3xl font-black md:text-5xl">
+                <h2 className="text-3xl font-black leading-tight md:text-4xl">
                   Запишитесь на занятие или задайте вопрос
                 </h2>
 
@@ -1240,79 +2209,130 @@ function Home() {
                   Напишите удобным способом, и мы обсудим цель занятий, уровень
                   подготовки и подходящий формат обучения.
                 </p>
+
+                <div className="mt-8 space-y-3">
+                  {contacts.phone && (
+                    <a
+                      href={phoneHref}
+                      className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 transition hover:bg-white/10 sm:p-5"
+                    >
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+                        <Phone className="h-5 w-5" />
+                      </span>
+
+                      <span className="min-w-0">
+                        <span className="block text-xs text-slate-500">
+                          Телефон
+                        </span>
+                        <span className="block truncate font-semibold text-white">
+                          {contacts.phone}
+                        </span>
+                      </span>
+                    </a>
+                  )}
+
+                  {contacts.email && (
+                    <a
+                      href={emailHref}
+                      className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 transition hover:bg-white/10 sm:p-5"
+                    >
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+                        <Mail className="h-5 w-5" />
+                      </span>
+
+                      <span className="min-w-0">
+                        <span className="block text-xs text-slate-500">
+                          Email
+                        </span>
+                        <span className="block truncate font-semibold text-white">
+                          {contacts.email}
+                        </span>
+                      </span>
+                    </a>
+                  )}
+
+                  {(contacts.city || contacts.address) && (
+                    <div className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+                        <MapPin className="h-5 w-5" />
+                      </span>
+
+                      <span className="min-w-0">
+                        <span className="block text-xs text-slate-500">
+                          Город / формат
+                        </span>
+                        <span className="block break-words font-semibold text-white">
+                          {contacts.address || contacts.city}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {telegramHref && (
+                    <a
+                      href={telegramHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan-300 px-6 py-3.5 text-center font-bold text-slate-950 transition hover:bg-cyan-200"
+                    >
+                      <Send className="h-5 w-5" />
+                      Telegram
+                    </a>
+                  )}
+
+                  {whatsappHref && (
+                    <a
+                      href={whatsappHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-300/10 px-6 py-3.5 text-center font-bold text-emerald-100 transition hover:bg-emerald-300/20"
+                    >
+                      WhatsApp
+                    </a>
+                  )}
+
+                  {mapHref && (
+                    <a
+                      href={mapHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 px-6 py-3.5 text-center font-bold text-white transition hover:bg-white/10"
+                    >
+                      <MapPin className="h-5 w-5" />
+                      Открыть карту
+                    </a>
+                  )}
+                </div>
               </div>
 
-              <div className="space-y-4">
-                {contacts.phone && (
-                  <a
-                    href={phoneHref}
-                    className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 transition hover:bg-white/10"
-                  >
-                    <Phone className="h-6 w-6 text-cyan-200" />
-                    <span>{contacts.phone}</span>
-                  </a>
-                )}
-
-                {contacts.email && (
-                  <a
-                    href={emailHref}
-                    className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 transition hover:bg-white/10"
-                  >
-                    <Mail className="h-6 w-6 text-cyan-200" />
-                    <span>{contacts.email}</span>
-                  </a>
-                )}
-
-                {(contacts.city || contacts.address) && (
-                  <div className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-5">
-                    <MapPin className="h-6 w-6 text-cyan-200" />
-                    <span>{contacts.address || contacts.city}</span>
-                  </div>
-                )}
-
-                {telegramHref && (
-                  <a
-                    href={telegramHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-cyan-300 px-7 py-4 text-center font-bold text-slate-950 transition hover:bg-cyan-200"
-                  >
-                    <Send className="h-5 w-5" />
-                    Написать в Telegram
-                  </a>
-                )}
-
-                {whatsappHref && (
-                  <a
-                    href={whatsappHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block rounded-full border border-emerald-300/30 bg-emerald-300/10 px-7 py-4 text-center font-bold text-emerald-100 transition hover:bg-emerald-300/20"
-                  >
-                    Написать в WhatsApp
-                  </a>
-                )}
-
-                {mapHref && (
-                  <a
-                    href={mapHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block rounded-full border border-white/10 px-7 py-4 text-center font-bold text-white transition hover:bg-white/10"
-                  >
-                    Открыть карту
-                  </a>
-                )}
-              </div>
+              <ContactForm />
             </div>
           </div>
         </div>
       </motion.section>
 
-      <footer className="relative z-10 border-t border-white/10 px-6 py-8">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-sm text-slate-400 md:flex-row">
-          <p>© 2026 {profile.profession}</p>
-          <p></p>
+      <footer className="relative z-10 border-t border-white/10 px-4 py-8 sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 text-center md:flex-row md:text-left">
+          <div className="min-w-0">
+            <p className="break-words font-semibold text-white">
+              © {currentYear} {profile.full_name}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">{profile.profession}</p>
+          </div>
+
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-slate-400">
+            {navLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="transition hover:text-cyan-200"
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
         </div>
       </footer>
 
@@ -1324,7 +2344,7 @@ function Home() {
             initial={{ opacity: 0, scale: 0.8, y: 18 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 18 }}
-            className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-cyan-300 text-slate-950 shadow-2xl transition hover:bg-cyan-200"
+            className="fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-cyan-300 text-slate-950 shadow-2xl transition hover:bg-cyan-200 sm:bottom-6 sm:right-6"
             aria-label="Наверх"
           >
             <ArrowUp className="h-5 w-5" />

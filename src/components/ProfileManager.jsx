@@ -38,7 +38,6 @@ const defaultProfile = {
 
 function ProfileManager() {
   const [profile, setProfile] = useState(defaultProfile);
-  const [heroPhotoFile, setHeroPhotoFile] = useState(null);
   const [backgroundFile, setBackgroundFile] = useState(null);
 
   const [loading, setLoading] = useState(true);
@@ -127,7 +126,6 @@ function ProfileManager() {
     setErrorText("");
 
     try {
-      const heroUpload = await uploadAsset(heroPhotoFile, "hero");
       const backgroundUpload = await uploadAsset(backgroundFile, "backgrounds");
 
       const payload = {
@@ -159,8 +157,8 @@ function ProfileManager() {
         science_card_title: profile.science_card_title.trim(),
         science_card_text: profile.science_card_text.trim(),
 
-        hero_photo_url: heroUpload?.url || profile.hero_photo_url || "",
-        hero_photo_path: heroUpload?.path || profile.hero_photo_path || "",
+        hero_photo_url: "",
+        hero_photo_path: "",
 
         background_image_url:
           backgroundUpload?.url || profile.background_image_url || "",
@@ -182,7 +180,6 @@ function ProfileManager() {
         throw new Error(error.message);
       }
 
-      setHeroPhotoFile(null);
       setBackgroundFile(null);
       setSuccessText("Основная информация успешно сохранена.");
       await loadProfile();
@@ -215,8 +212,9 @@ function ProfileManager() {
           <div>
             <h2 className="text-2xl font-black">Основная информация</h2>
             <p className="mt-2 text-slate-400">
-              Здесь редактируется главный экран, фото преподавателя, фоновое
-              изображение, блок “Обо мне” и научная карточка.
+              Здесь редактируется главный экран, фон сайта, блок “Обо мне” и
+              научная карточка. Сайт работает без фото преподавателя —
+              современная научная панель отображается автоматически.
             </p>
           </div>
         </div>
@@ -225,33 +223,10 @@ function ProfileManager() {
           <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/5 p-5 md:col-span-2">
             <div className="mb-5 flex items-center gap-3">
               <ImagePlus className="h-6 w-6 text-cyan-200" />
-              <h3 className="text-xl font-bold">Фото и фон сайта</h3>
+              <h3 className="text-xl font-bold">Фон сайта</h3>
             </div>
 
-            <div className="grid gap-5 md:grid-cols-2">
-              <label className="block">
-                <span className="mb-2 block text-sm text-slate-300">
-                  Фото преподавателя
-                </span>
-
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={(event) =>
-                    setHeroPhotoFile(event.target.files?.[0] || null)
-                  }
-                  className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none file:mr-4 file:rounded-full file:border-0 file:bg-cyan-300 file:px-4 file:py-2 file:font-semibold file:text-slate-950"
-                />
-
-                {profile.hero_photo_url && (
-                  <img
-                    src={profile.hero_photo_url}
-                    alt="Фото преподавателя"
-                    className="mt-4 h-56 w-full rounded-2xl object-cover"
-                  />
-                )}
-              </label>
-
+            <div className="grid gap-5">
               <label className="block">
                 <span className="mb-2 block text-sm text-slate-300">
                   Фоновое изображение сайта
@@ -275,7 +250,7 @@ function ProfileManager() {
                 )}
               </label>
 
-              <label className="block md:col-span-2">
+              <label className="block">
                 <span className="mb-2 block text-sm text-slate-300">
                   Затемнение фона: {profile.background_overlay_opacity}
                 </span>
