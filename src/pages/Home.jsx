@@ -14,6 +14,7 @@ import {
   Atom,
   BookOpen,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Dna,
   Droplets,
@@ -1643,8 +1644,10 @@ function Home() {
   const [showBackTop, setShowBackTop] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
 
-  // Фильтр материалов по предмету в разделе «Полезные учебные материалы»
+  // Фильтр и пагинация материалов по предмету в разделе «Полезные учебные материалы»
+  const MATERIALS_PER_PAGE = 6;
   const [subjectFilter, setSubjectFilter] = useState("Все");
+  const [materialPage, setMaterialPage] = useState(1);
 
   // Порядок табов: сперва основные предметы, затем любые другие из базы
   const preferredSubjects = ["Химия", "Биология", "География", "Экология"];
@@ -1664,6 +1667,12 @@ function Home() {
     filter === "Все" || material.subject === filter;
   const visibleMaterials = materials.filter((material) =>
     matchesSubject(material, subjectFilter)
+  );
+  const totalPages = Math.max(1, Math.ceil(visibleMaterials.length / MATERIALS_PER_PAGE));
+  const currentPage = Math.min(materialPage, totalPages);
+  const pageMaterials = visibleMaterials.slice(
+    (currentPage - 1) * MATERIALS_PER_PAGE,
+    currentPage * MATERIALS_PER_PAGE
   );
   const countBySubject = (filter) =>
     filter === "Все"
@@ -1706,6 +1715,16 @@ function Home() {
       clearInterval(interval);
     };
   }, [loadSiteData]);
+
+  useEffect(() => {
+    setMaterialPage(1);
+  }, [subjectFilter]);
+
+  useEffect(() => {
+    setMaterialPage((current) =>
+      Math.min(Math.max(current, 1), totalPages)
+    );
+  }, [totalPages]);
 
   useEffect(() => {
     function handleScroll() {
@@ -2380,7 +2399,7 @@ function Home() {
               )}
 
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {visibleMaterials.map((item, index) => {
+                {pageMaterials.map((item, index) => {
                 const materialUrl = safeExternalUrl(item.link_url);
 
                 return (
@@ -2441,6 +2460,70 @@ function Home() {
                 );
               })}
               </div>
+
+              {totalPages > 1 && (
+                <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+                  <p className="text-sm text-slate-400 tabular-nums">
+                    {(currentPage - 1) * MATERIALS_PER_PAGE + 1}
+                    –
+                    {Math.min(
+                      currentPage * MATERIALS_PER_PAGE,
+                      visibleMaterials.length
+                    )}{" "}
+                    из {visibleMaterials.length}
+                  </p>
+
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMaterialPage((current) => Math.max(1, current - 1))
+                      }
+                      disabled={currentPage === 1}
+                      aria-label="Предыдущая страница"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+                      (page) => {
+                        const isActive = page === currentPage;
+                        return (
+                          <button
+                            key={page}
+                            type="button"
+                            onClick={() => setMaterialPage(page)}
+                            aria-label={`Страница ${page}`}
+                            aria-current={isActive ? "page" : undefined}
+                            className={`inline-flex h-9 min-w-9 items-center justify-center rounded-full border px-3 text-sm font-semibold tabular-nums transition ${
+                              isActive
+                                ? "border-cyan-300/45 bg-cyan-300/15 text-cyan-100"
+                                : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      }
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMaterialPage((current) =>
+                          Math.min(totalPages, current + 1)
+                        )
+                      }
+                      disabled={currentPage === totalPages}
+                      aria-label="Следующая страница"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
