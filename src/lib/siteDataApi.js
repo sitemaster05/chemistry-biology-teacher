@@ -91,7 +91,7 @@ async function loadSiteDataFromSupabase() {
       )
       .eq("is_published", true)
       .order("created_at", { ascending: false })
-      .limit(6),
+      .limit(200),
     supabase
       .from("achievements")
       .select("*")

@@ -114,7 +114,7 @@ export default async function handler(request, response) {
       supabaseGet("services?select=*&is_published=eq.true&order=sort_order.asc"),
 
       supabaseGet(
-        "materials?select=id,title,subject,grade,description,link_url,is_published,created_at&is_published=eq.true&order=created_at.desc&limit=6"
+        "materials?select=id,title,subject,grade,description,link_url,is_published,created_at&is_published=eq.true&order=created_at.desc&limit=200"
       ),
 
       supabaseGet(
