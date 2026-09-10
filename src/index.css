@@ -421,6 +421,16 @@ body {
   animation: watermarkFloatC 50s ease-in-out infinite alternate;
 }
 
+/* Глобус — география и экология */
+.bg-watermark-globe {
+  top: 26%;
+  left: 4%;
+  width: 150px;
+  height: 150px;
+  color: var(--site-secondary, #6ee7b7);
+  animation: watermarkFloatD 47s ease-in-out infinite alternate;
+}
+
 @keyframes watermarkFloatA {
   from {
     transform: translate3d(0, 0, 0) rotate(0deg);
@@ -451,10 +461,21 @@ body {
   }
 }
 
+@keyframes watermarkFloatD {
+  from {
+    transform: translate3d(0, 0, 0) rotate(12deg);
+  }
+
+  to {
+    transform: translate3d(26px, 28px, 0) rotate(-20deg);
+  }
+}
+
 /* На мобильных оставляем только один водяной знак — без перегруза */
 @media (max-width: 767px) {
   .bg-watermark-dna,
-  .bg-watermark-flask {
+  .bg-watermark-flask,
+  .bg-watermark-globe {
     display: none;
   }
 

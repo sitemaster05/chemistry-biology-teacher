@@ -195,7 +195,11 @@ function MaterialsManager() {
             >
               <option value="Химия">Химия</option>
               <option value="Биология">Биология</option>
+              <option value="География">География</option>
+              <option value="Экология">Экология</option>
               <option value="Химия и биология">Химия и биология</option>
+              <option value="Биология и география">Биология и география</option>
+              <option value="География и экология">География и экология</option>
               <option value="Подготовка к экзаменам">
                 Подготовка к экзаменам
               </option>

@@ -74,6 +74,8 @@ const configs = {
         options: [
           { value: "flask", label: "Колба / химия" },
           { value: "dna", label: "ДНК / биология" },
+          { value: "globe", label: "Глобус / география" },
+          { value: "leaf", label: "Лист / экология" },
           { value: "graduation", label: "Обучение / экзамены" },
           { value: "book", label: "Книга / материалы" },
           { value: "microscope", label: "Микроскоп" },

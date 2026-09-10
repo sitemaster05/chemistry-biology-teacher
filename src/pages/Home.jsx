@@ -16,9 +16,12 @@ import {
   CheckCircle2,
   ChevronRight,
   Dna,
+  Droplets,
   FlaskConical,
+  Globe2,
   GraduationCap,
   Image as ImageIcon,
+  Leaf,
   Mail,
   MapPin,
   Menu,
@@ -28,19 +31,22 @@ import {
   Send,
   Sparkles,
   Star,
+  Sun,
+  TreePine,
   Trophy,
+  Wind,
   X,
 } from "lucide-react";
 
 const defaultProfile = {
-  full_name: "Алиосманова Кристина",
-  profession: "Учитель химии и биологии",
+  full_name: "Алиосманова Надира",
+  profession: "Учитель химии, биологии, географии и экологии",
 
-  hero_badge: "Современное обучение химии и биологии",
+  hero_badge: "Химия · Биология · География · Экология",
   hero_title: "Учитель",
-  hero_highlight: "химии и биологии",
+  hero_highlight: "естественных наук",
   hero_description:
-    "Помогаю ученикам понимать сложные темы простым языком, готовиться к урокам, контрольным, олимпиадам и экзаменам.",
+    "Помогаю ученикам в Каспийске и по всему Дагестану понимать сложные темы простым языком, готовиться к урокам, контрольным, олимпиадам и экзаменам. Занятия — в Каспийске и онлайн.",
 
   experience_value: "5+",
   experience_label: "лет опыта",
@@ -57,11 +63,11 @@ const defaultProfile = {
 
   approach_title: "Мой подход",
   approach_text:
-    "Я объясняю химию и биологию через схемы, примеры, визуальные образы и практические задания. Для каждого ученика подбираю темп и формат занятий, чтобы материал был понятным и полезным.",
+    "Я объясняю химию, биологию, географию и экологию через схемы, примеры, визуальные образы и практические задания. Для каждого ученика подбираю темп и формат занятий, чтобы материал был понятным и полезным.",
 
   science_card_title: "Наука может быть понятной",
   science_card_text:
-    "Химия и биология становятся интереснее, когда ученик видит связь между формулами, клетками, реакциями и реальной жизнью.",
+    "Химия, биология, география и экология становятся интереснее, когда ученик видит связь между формулами, клетками, реакциями, природой и реальной жизнью.",
 
   hero_photo_url: "",
   hero_photo_path: "",
@@ -91,17 +97,11 @@ const navLinks = [
   { href: "#contacts", label: "Контакты" },
 ];
 
-const lifeElements = [
-  { symbol: "H", number: 1, mass: "1.008", name: "Водород" },
-  { symbol: "C", number: 6, mass: "12.011", name: "Углерод" },
-  { symbol: "N", number: 7, mass: "14.007", name: "Азот" },
-  { symbol: "O", number: 8, mass: "15.999", name: "Кислород" },
-];
-
 const scienceFormulas = [
   "H₂O",
   "CO₂",
   "O₂",
+  "O₃",
   "NaCl",
   "C₆H₁₂O₆",
   "NH₃",
@@ -109,10 +109,144 @@ const scienceFormulas = [
   "CH₄",
   "Fe₂O₃",
   "KMnO₄",
+  "CaCO₃",
+  "SiO₂",
+  "N₂O",
+  "SO₂",
   "АТФ",
   "ДНК",
   "РНК",
   "pH 7.0",
+];
+
+/* Витрина предметов в панели героя: у каждой науки — свой цвет,
+   набор плиток с данными, факт и бегущая лента. */
+const subjectShowcase = [
+  {
+    id: "chemistry",
+    label: "Химия",
+    tabIcon: Atom,
+    pill: "border-cyan-300/50 bg-cyan-300/15 text-cyan-100",
+    badge: "border-cyan-300/25 bg-cyan-300/10 text-cyan-200",
+    tileBig: "text-cyan-200",
+    header: "Периодическая система",
+    title: "Элементы жизни",
+    tiles: [
+      { top: "1 · 1.008", big: "H", bottom: "Водород" },
+      { top: "6 · 12.011", big: "C", bottom: "Углерод" },
+      { top: "7 · 14.007", big: "N", bottom: "Азот" },
+      { top: "8 · 15.999", big: "O", bottom: "Кислород" },
+    ],
+    factIcon: FlaskConical,
+    factText:
+      "В организме человека — около 25 химических элементов таблицы Менделеева",
+    ticker: [
+      "H₂O",
+      "CO₂",
+      "O₂",
+      "NaCl",
+      "C₆H₁₂O₆",
+      "NH₃",
+      "H₂SO₄",
+      "CH₄",
+      "KMnO₄",
+      "Fe₂O₃",
+      "pH 7.0",
+    ],
+  },
+  {
+    id: "biology",
+    label: "Биология",
+    tabIcon: Dna,
+    pill: "border-emerald-300/50 bg-emerald-300/15 text-emerald-100",
+    badge: "border-emerald-300/25 bg-emerald-300/10 text-emerald-200",
+    tileBig: "text-emerald-200",
+    header: "Молекулярная биология",
+    title: "Код жизни",
+    tiles: [
+      { top: "пара · Т", big: "А", bottom: "Аденин" },
+      { top: "пара · А", big: "Т", bottom: "Тимин" },
+      { top: "пара · Ц", big: "Г", bottom: "Гуанин" },
+      { top: "пара · Г", big: "Ц", bottom: "Цитозин" },
+    ],
+    factVisual: "dna",
+    factIcon: Dna,
+    factText: "ДНК — двойная спираль, в которой записана наследственная информация",
+    ticker: [
+      "АТФ",
+      "РНК",
+      "фотосинтез",
+      "митоз",
+      "геном",
+      "белок",
+      "фермент",
+      "хлорофилл",
+      "C₆H₁₂O₆",
+      "клетка",
+    ],
+  },
+  {
+    id: "geography",
+    label: "География",
+    tabIcon: Globe2,
+    pill: "border-amber-300/50 bg-amber-300/15 text-amber-100",
+    badge: "border-amber-300/25 bg-amber-300/10 text-amber-200",
+    tileBig: "text-amber-200",
+    header: "Координаты",
+    title: "Каспийск · Дагестан",
+    tiles: [
+      { top: "с.ш.", big: "42.9°", bottom: "Каспийск" },
+      { top: "в.д.", big: "47.6°", bottom: "Дагестан" },
+      { top: "уровень", big: "−28 м", bottom: "Каспий" },
+      { top: "высота", big: "4466 м", bottom: "Базардюзю" },
+    ],
+    factIcon: MapPin,
+    factText:
+      "Каспийское море — крупнейшее замкнутое озеро планеты, а Дагестан — республика гор и моря",
+    ticker: [
+      "42.9° с.ш.",
+      "47.6° в.д.",
+      "Эльбрус 5642 м",
+      "Сулакский каньон 1920 м",
+      "рельеф",
+      "климат",
+      "меридиан",
+      "параллель",
+      "Кавказ",
+      "Каспий",
+    ],
+  },
+  {
+    id: "ecology",
+    label: "Экология",
+    tabIcon: Leaf,
+    pill: "border-lime-300/50 bg-lime-300/15 text-lime-100",
+    badge: "border-lime-300/25 bg-lime-300/10 text-lime-200",
+    tileBig: "text-lime-200",
+    header: "Компоненты природы",
+    title: "Забота о планете",
+    tiles: [
+      { top: "21% O₂", bigIcon: Wind, bottom: "Воздух" },
+      { top: "2,5% пресной", bigIcon: Droplets, bottom: "Вода" },
+      { top: "лёгкие планеты", bigIcon: TreePine, bottom: "Леса" },
+      { top: "возобновляемая", bigIcon: Sun, bottom: "Энергия" },
+    ],
+    factIcon: Leaf,
+    factText:
+      "Кавказ входит в число 36 «горячих точек» биоразнообразия нашей планеты",
+    ticker: [
+      "биоразнообразие",
+      "экосистема",
+      "Красная книга",
+      "заповедник",
+      "раздельный сбор",
+      "CO₂ ↓",
+      "O₂ ↑",
+      "чистая вода",
+      "энергосбережение",
+      "климат",
+    ],
+  },
 ];
 
 // Пузырьки фона: позиция, размер (px), длительность и задержка (сек),
@@ -400,14 +534,20 @@ function KnowledgeMarquee() {
   const subjects = [
     "Химия",
     "Биология",
-    "Генетика",
+    "География",
     "Экология",
+    "Генетика",
     "Органическая химия",
     "Биохимия",
+    "Геология",
+    "Метеорология",
+    "Картография",
+    "Ландшафтоведение",
     "Анатомия",
     "Ботаника",
     "Зоология",
     "Физиология",
+    "Природоведение",
   ];
 
   return (
@@ -503,6 +643,42 @@ function getAdvantages(data) {
   return (data?.advantages || []).map((item) => item.text || item.title);
 }
 
+/* Цветовая тема карточки направления — у каждого предмета свой акцент */
+function getServiceTheme(iconName) {
+  switch (iconName) {
+    case "dna":
+      return {
+        iconBox: "bg-emerald-300/10 text-emerald-200",
+        hover: "hover:border-emerald-300/30",
+      };
+    case "globe":
+      return {
+        iconBox: "bg-amber-300/10 text-amber-200",
+        hover: "hover:border-amber-300/30",
+      };
+    case "leaf":
+      return {
+        iconBox: "bg-lime-300/10 text-lime-200",
+        hover: "hover:border-lime-300/30",
+      };
+    case "graduation":
+      return {
+        iconBox: "bg-blue-300/10 text-blue-200",
+        hover: "hover:border-blue-300/30",
+      };
+    case "microscope":
+      return {
+        iconBox: "bg-violet-300/10 text-violet-200",
+        hover: "hover:border-violet-300/30",
+      };
+    default:
+      return {
+        iconBox: "bg-cyan-300/10 text-cyan-200",
+        hover: "hover:border-cyan-300/30",
+      };
+  }
+}
+
 function getServiceIcon(iconName) {
   const className = "h-7 w-7";
 
@@ -517,6 +693,10 @@ function getServiceIcon(iconName) {
       return <Microscope className={className} />;
     case "atom":
       return <Atom className={className} />;
+    case "globe":
+      return <Globe2 className={className} />;
+    case "leaf":
+      return <Leaf className={className} />;
     case "flask":
     default:
       return <FlaskConical className={className} />;
@@ -609,6 +789,53 @@ function getServiceVisual(iconName) {
     );
   }
 
+  if (iconName === "globe") {
+    return (
+      <div className="relative h-20 overflow-hidden rounded-3xl border border-amber-300/15 bg-amber-300/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(252,211,77,0.3),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(110,231,183,0.2),transparent_35%)]" />
+
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 16, repeat: Infinity, ease: "linear" }}
+          className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-100/50"
+        />
+
+        <motion.div
+          animate={{ rotate: -360 }}
+          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+          className="absolute left-1/2 top-1/2 h-8 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-emerald-100/40"
+        />
+
+        <Globe2 className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 text-amber-100" />
+
+        <div className="absolute right-6 top-6 h-2.5 w-2.5 rounded-full bg-emerald-200/80" />
+        <div className="absolute bottom-6 left-6 h-2 w-2 rounded-full bg-cyan-200/70" />
+      </div>
+    );
+  }
+
+  if (iconName === "leaf") {
+    return (
+      <div className="relative h-20 overflow-hidden rounded-3xl border border-lime-300/15 bg-lime-300/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_75%,rgba(163,230,53,0.3),transparent_38%),radial-gradient(circle_at_75%_25%,rgba(110,231,183,0.25),transparent_35%)]" />
+
+        <Leaf className="absolute left-5 top-5 h-10 w-10 text-lime-100" />
+
+        <motion.div
+          animate={{ y: [0, -6, 0], rotate: [0, 8, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute right-6 top-7 h-6 w-6 rounded-full border-2 border-lime-200/60"
+        />
+
+        <motion.div
+          animate={{ y: [0, 5, 0] }}
+          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-5 right-12 h-2.5 w-2.5 rounded-full bg-emerald-200/80"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-20 overflow-hidden rounded-3xl border border-cyan-300/15 bg-cyan-300/10">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(103,232,249,0.35),transparent_35%),radial-gradient(circle_at_80%_75%,rgba(110,231,183,0.25),transparent_35%)]" />
@@ -641,6 +868,31 @@ function getSubjectBadgeClass(subject) {
 
   if (subject === "Химия") {
     return "bg-cyan-300/10 text-cyan-200";
+  }
+
+  if (subject === "География") {
+    return "bg-amber-300/10 text-amber-200";
+  }
+
+  if (subject === "Экология") {
+    return "bg-lime-300/10 text-lime-200";
+  }
+
+  // Комбинированные предметы — двухцветный градиент входящих наук
+  if (subject === "Химия и биология") {
+    return "bg-gradient-to-r from-cyan-300/15 to-emerald-300/15 text-cyan-100";
+  }
+
+  if (subject === "Биология и география") {
+    return "bg-gradient-to-r from-emerald-300/15 to-amber-300/15 text-emerald-100";
+  }
+
+  if (subject === "География и экология") {
+    return "bg-gradient-to-r from-amber-300/15 to-lime-300/15 text-amber-100";
+  }
+
+  if (subject === "Подготовка к экзаменам") {
+    return "bg-violet-300/10 text-violet-200";
   }
 
   return "bg-blue-300/10 text-blue-200";
@@ -729,6 +981,11 @@ function ScienceBackground() {
 
       <div className="bg-watermark bg-watermark-flask science-bg-anim">
         <FlaskConical className="h-full w-full" strokeWidth={1} />
+      </div>
+
+      {/* Глобус — символ географии и экологии */}
+      <div className="bg-watermark bg-watermark-globe science-bg-anim">
+        <Globe2 className="h-full w-full" strokeWidth={1} />
       </div>
     </div>
   );
@@ -867,14 +1124,16 @@ function DnaVisual() {
   );
 }
 
-function FormulaTicker() {
+function FormulaTicker({ items }) {
+  const values = items && items.length ? items : scienceFormulas;
+
   return (
     <div
       className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/50 py-3"
       aria-hidden="true"
     >
       <div className="formula-track flex w-max items-center whitespace-nowrap text-sm font-semibold tracking-wide text-slate-300">
-        {[...scienceFormulas, ...scienceFormulas].map((formula, index) => (
+        {[...values, ...values].map((formula, index) => (
           <span key={`${formula}-${index}`} className="flex items-center">
             <span>{formula}</span>
             <span className="mx-7 h-1 w-1 rounded-full bg-cyan-300/60" />
@@ -886,6 +1145,21 @@ function FormulaTicker() {
 }
 
 function SciencePanel({ profile }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Автопереключение вкладок предметов; клик по вкладке перезапускает таймер
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setActiveIndex(
+        (index) => (index + 1) % subjectShowcase.length
+      );
+    }, 6000);
+
+    return () => window.clearTimeout(timer);
+  }, [activeIndex]);
+
+  const subject = subjectShowcase[activeIndex];
+
   return (
     <div className="relative mx-auto w-full max-w-lg">
       <div className="absolute -inset-x-6 -inset-y-8 z-0 rounded-[2rem] bg-[linear-gradient(135deg,rgba(103,232,249,0.18),rgba(110,231,183,0.08),rgba(147,197,253,0.16))] blur-2xl" />
@@ -895,64 +1169,137 @@ function SciencePanel({ profile }) {
         <div className="data-stream absolute inset-x-0 top-0 z-10 h-20 opacity-60" />
 
         <div className="relative">
-          <div className="mb-5 flex items-end justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Периодическая система
-              </p>
-              <p className="mt-1.5 text-lg font-bold text-white sm:text-xl">
-                Элементы жизни
-              </p>
-            </div>
+          {/* Вкладки предметов */}
+          <div className="mb-5 grid grid-cols-4 gap-2">
+            {subjectShowcase.map((item, index) => {
+              const isActive = index === activeIndex;
 
-            <div className="flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-semibold text-emerald-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.9)]" />
-              Химия + Биология
-            </div>
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveIndex(index)}
+                  aria-pressed={isActive}
+                  className={`relative flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl border px-1 py-2.5 transition sm:px-2 ${
+                    isActive
+                      ? item.pill
+                      : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10"
+                  }`}
+                >
+                  <item.tabIcon className="h-4 w-4 shrink-0" />
+                  <span className="text-[11px] font-semibold leading-none">
+                    {item.label}
+                  </span>
+
+                  {isActive && (
+                    <motion.span
+                      key={`progress-${activeIndex}`}
+                      initial={{ width: "0%" }}
+                      animate={{ width: "100%" }}
+                      transition={{ duration: 6, ease: "linear" }}
+                      className="absolute bottom-0 left-0 h-[2px] rounded-full bg-current opacity-60"
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
-            {lifeElements.map((element, index) => (
-              <motion.div
-                key={element.symbol}
-                animate={{ y: [0, -6, 0] }}
-                transition={{
-                  duration: 4 + index,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="rounded-2xl border border-cyan-300/15 bg-slate-950/60 p-2 text-center backdrop-blur transition hover:border-cyan-300/40 sm:p-3"
-              >
-                <p className="text-[10px] font-semibold text-slate-500">
-                  {element.number}
-                </p>
-                <p className="text-xl font-black text-cyan-200 sm:text-2xl">
-                  {element.symbol}
-                </p>
-                <p className="text-[10px] tabular-nums text-slate-500">
-                  {element.mass}
-                </p>
-                <p className="mt-1 truncate text-[10px] text-slate-400">
-                  {element.name}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={subject.id}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+              <div className="mb-5 flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    {subject.header}
+                  </p>
+                  <p className="mt-1.5 truncate text-lg font-bold text-white sm:text-xl">
+                    {subject.title}
+                  </p>
+                </div>
 
-          <div className="mt-5">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Структура
-              </p>
-              <p className="text-sm font-semibold text-emerald-200">ДНК</p>
-            </div>
+                <div
+                  className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${subject.badge}`}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-current shadow-[0_0_12px_rgba(255,255,255,0.45)]" />
+                  {subject.label}
+                </div>
+              </div>
 
-            <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-              <DnaVisual />
-            </div>
-          </div>
+              <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
+                {subject.tiles.map((tile, index) => (
+                  <motion.div
+                    key={`${subject.id}-${tile.bottom}`}
+                    animate={{ y: [0, -6, 0] }}
+                    transition={{
+                      duration: 4 + index,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="rounded-2xl border border-white/10 bg-slate-950/60 p-2 text-center backdrop-blur transition hover:border-white/25 sm:p-3"
+                  >
+                    <p className="truncate text-[10px] font-semibold text-slate-500">
+                      {tile.top}
+                    </p>
 
-          <FormulaTicker />
+                    {tile.bigIcon ? (
+                      <tile.bigIcon
+                        className={`mx-auto mt-1.5 h-6 w-6 sm:h-7 sm:w-7 ${subject.tileBig}`}
+                      />
+                    ) : (
+                      <p
+                        className={`text-xl font-black sm:text-2xl ${subject.tileBig}`}
+                      >
+                        {tile.big}
+                      </p>
+                    )}
+
+                    <p className="mt-1 truncate text-[10px] text-slate-400">
+                      {tile.bottom}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="mt-5">
+                <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
+                  {subject.factVisual === "dna" ? (
+                    <>
+                      <div className="mb-3 flex items-center justify-between">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Структура
+                        </p>
+                        <p className="text-sm font-semibold text-emerald-200">
+                          ДНК
+                        </p>
+                      </div>
+
+                      <DnaVisual />
+                    </>
+                  ) : (
+                    <div className="flex min-h-[76px] items-center gap-3">
+                      <div
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${subject.badge}`}
+                      >
+                        <subject.factIcon className="h-4 w-4" />
+                      </div>
+
+                      <p className="text-sm leading-6 text-slate-300">
+                        {subject.factText}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <FormulaTicker items={subject.ticker} />
+            </motion.div>
+          </AnimatePresence>
 
           <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/72 p-5 backdrop-blur-xl">
             <p className="text-sm text-cyan-200">{profile.profession}</p>
@@ -1266,6 +1613,34 @@ function Home() {
   const [showBackTop, setShowBackTop] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
 
+  // Фильтр материалов по предмету в разделе «Полезные учебные материалы»
+  const [subjectFilter, setSubjectFilter] = useState("Все");
+
+  // Порядок табов: сперва основные предметы, затем любые другие из базы
+  const preferredSubjects = ["Химия", "Биология", "География", "Экология"];
+  const uniqueSubjects = [
+    ...new Set(materials.map((item) => item.subject).filter(Boolean)),
+  ];
+  const filterTabs = [
+    "Все",
+    ...preferredSubjects.filter((subject) => uniqueSubjects.includes(subject)),
+    ...uniqueSubjects.filter(
+      (subject) => !preferredSubjects.includes(subject)
+    ),
+  ];
+  const matchesSubject = (material, filter) =>
+    filter === "Все" ||
+    material.subject === filter ||
+    (material.subject || "").includes(filter);
+  const visibleMaterials = materials.filter((material) =>
+    matchesSubject(material, subjectFilter)
+  );
+  const countBySubject = (filter) =>
+    filter === "Все"
+      ? materials.length
+      : materials.filter((material) => matchesSubject(material, filter))
+          .length;
+
   const loadSiteData = useCallback(async () => {
     try {
       const data = await loadSiteDataFromApi();
@@ -1428,7 +1803,7 @@ function Home() {
                 Учитель
               </p>
               <p className="truncate text-sm font-semibold text-white sm:text-base">
-                Химия &amp; Биология
+                Естественные науки
               </p>
             </div>
           </a>
@@ -1488,7 +1863,7 @@ function Home() {
 
                   <div>
                     <p className="text-sm text-slate-400">Меню сайта</p>
-                    <p className="font-semibold text-white">Химия &amp; Биология</p>
+                    <p className="font-semibold text-white">Естественные науки</p>
                   </div>
                 </div>
 
@@ -1566,12 +1941,24 @@ function Home() {
                 Индивидуальный подход
               </span>
 
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+                <Atom className="h-3.5 w-3.5 text-cyan-200" />
                 Химия
               </span>
 
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+                <Dna className="h-3.5 w-3.5 text-emerald-200" />
                 Биология
+              </span>
+
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+                <Globe2 className="h-3.5 w-3.5 text-amber-200" />
+                География
+              </span>
+
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+                <Leaf className="h-3.5 w-3.5 text-lime-200" />
+                Экология
               </span>
             </div>
 
@@ -1846,7 +2233,7 @@ function Home() {
             badge="Направления"
             number="02"
             title="Чем я могу помочь"
-            text="Направления работы, которые можно редактировать через админ-панель."
+            text="Химия, биология, география и экология: занятия по школьной программе, разбор сложных тем, подготовка к контрольным, олимпиадам и экзаменам — в Каспийске и онлайн."
           />
 
           {services.length === 0 ? (
@@ -1856,34 +2243,40 @@ function Home() {
               text="Добавьте услуги в админ-панели, и блок сразу станет готовой витриной занятий."
             />
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {services.map((service, index) => (
-                <SpotlightCard
-                  key={service.id || service.title}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.08, duration: 0.55 }}
-                  whileHover={{ y: -8 }}
-                  className="premium-card group overflow-hidden p-5 transition hover:border-cyan-300/30"
-                >
-                  {getServiceVisual(service.icon)}
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {services.map((service, index) => {
+                const theme = getServiceTheme(service.icon);
 
-                  <div className="mt-5 flex items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
-                      {getServiceIcon(service.icon)}
+                return (
+                  <SpotlightCard
+                    key={service.id || service.title}
+                    initial={{ opacity: 0, y: 24 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.08, duration: 0.55 }}
+                    whileHover={{ y: -8 }}
+                    className={`premium-card group overflow-hidden p-5 transition ${theme.hover}`}
+                  >
+                    {getServiceVisual(service.icon)}
+
+                    <div className="mt-5 flex items-center gap-3">
+                      <div
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${theme.iconBox}`}
+                      >
+                        {getServiceIcon(service.icon)}
+                      </div>
+
+                      <h3 className="text-lg font-bold sm:text-xl">
+                        {service.title}
+                      </h3>
                     </div>
 
-                    <h3 className="text-lg font-bold sm:text-xl">
-                      {service.title}
-                    </h3>
-                  </div>
-
-                  <p className="mt-3 text-sm leading-7 text-slate-300">
-                    {service.text}
-                  </p>
-                </SpotlightCard>
-              ))}
+                    <p className="mt-3 text-sm leading-7 text-slate-300">
+                      {service.text}
+                    </p>
+                  </SpotlightCard>
+                );
+              })}
             </div>
           )}
         </div>
@@ -1917,8 +2310,40 @@ function Home() {
               text="Здесь удобно показывать конспекты, таблицы и ссылки, когда они появятся в админке."
             />
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {materials.map((item, index) => {
+            <>
+              {/* Фильтр по предмету */}
+              {materials.length > 0 && (
+                <div className="mb-9 flex flex-wrap items-center justify-center gap-2">
+                  {filterTabs.map((tab) => {
+                    const isActive = subjectFilter === tab;
+
+                    return (
+                      <button
+                        key={tab}
+                        type="button"
+                        onClick={() => setSubjectFilter(tab)}
+                        className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                          isActive
+                            ? "border-cyan-300/45 bg-cyan-300/15 text-cyan-100"
+                            : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                        }`}
+                      >
+                        {tab}
+                        <span
+                          className={`text-xs tabular-nums ${
+                            isActive ? "text-cyan-200/80" : "text-slate-500"
+                          }`}
+                        >
+                          {countBySubject(tab)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {visibleMaterials.map((item, index) => {
                 const materialUrl = safeExternalUrl(item.link_url);
 
                 return (
@@ -1977,7 +2402,8 @@ function Home() {
                   </SpotlightCard>
                 );
               })}
-            </div>
+              </div>
+            </>
           )}
         </div>
       </motion.section>

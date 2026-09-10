@@ -71,7 +71,7 @@ export function buildEmailHtml({ name, contact, message }) {
   <body style="margin:0;padding:24px;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;">
     <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;">
       <div style="background:#0f172a;padding:20px 28px;">
-        <p style="margin:0;color:#67e8f9;font-size:13px;letter-spacing:1px;text-transform:uppercase;">Сайт учителя химии и биологии</p>
+        <p style="margin:0;color:#67e8f9;font-size:13px;letter-spacing:1px;text-transform:uppercase;">Сайт учителя естественных наук</p>
         <h1 style="margin:8px 0 0;color:#ffffff;font-size:20px;">Новое сообщение с сайта</h1>
       </div>
 
@@ -128,7 +128,7 @@ export function isEmailConfigured(env) {
 
 // Отправляет письмо с сообщением с формы. Бросает исключение при ошибке.
 export async function sendContactEmail(env, { name, contact, message }) {
-  const fromName = env.EMAIL_FROM_NAME || "Сайт учителя химии и биологии";
+  const fromName = env.EMAIL_FROM_NAME || "Сайт учителя естественных наук";
 
   await getEmailTransport(env).sendMail({
     from: `"${fromName}" <${env.EMAIL_SERVER_USER}>`,
