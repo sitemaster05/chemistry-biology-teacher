@@ -38,6 +38,35 @@ import {
   X,
 } from "lucide-react";
 
+/* Полупрозрачный фоновый рисунок для карточек
+   Fisher-Yates shuffle + useRef: порядок определяется ОДИН раз при загрузке страницы,
+   каждая карточка получает уникальную картинку, при скроле/ре-рендере НЕ меняется. */
+const TOTAL_CARD_BGS = 27;
+const shuffledCardBgs = (() => {
+  const arr = Array.from({ length: TOTAL_CARD_BGS }, (_, i) => i + 1);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+})();
+const cardBgIndexRef = { current: 0 };
+
+function CardBg() {
+  const [idx] = useState(() => {
+    const pos = cardBgIndexRef.current % TOTAL_CARD_BGS;
+    cardBgIndexRef.current++;
+    return shuffledCardBgs[pos];
+  });
+  return (
+    <div
+      className="card-bg-image"
+      aria-hidden="true"
+      style={{ backgroundImage: `url(/card-bg/card-bg-${idx}.png)` }}
+    />
+  );
+}
+
 const defaultProfile = {
   full_name: "Алиосманова Надира",
   profession: "Учитель химии, биологии, географии и экологии",
@@ -324,7 +353,7 @@ function AnimatedCounter({ value }) {
   return <span ref={ref}>{display}</span>;
 }
 
-/* Карточка со «светом за курсором»: подсветка следует за мышью. */
+
 function SpotlightCard({ className = "", children, ...props }) {
   const ref = useRef(null);
 
@@ -588,6 +617,7 @@ function SectionDivider() {
 function EmptyState({ icon: Icon = Sparkles, title, text }) {
   return (
     <div className="premium-panel mx-auto max-w-3xl p-8 text-center">
+              <CardBg />
       <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-cyan-200">
         <Icon className="h-7 w-7" />
       </div>
@@ -1729,6 +1759,7 @@ function Home() {
     return (
       <main className="site-canvas flex min-h-screen items-center justify-center bg-slate-950 px-5 text-white">
         <div className="premium-panel max-w-xl p-8 text-center">
+              <CardBg />
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-200">
             <Atom className="h-8 w-8" />
           </div>
@@ -2097,6 +2128,7 @@ function Home() {
               whileHover={{ y: -6 }}
               className="premium-panel p-6 sm:p-7 md:col-span-4 md:p-8"
             >
+              <CardBg />
               <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
                 <div className="min-w-0 flex-1">
                   <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-200">
@@ -2123,6 +2155,7 @@ function Home() {
               whileHover={{ y: -6 }}
               className="premium-panel p-6 md:col-span-2"
             >
+              <CardBg />
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                 Микроэлементы
               </p>
@@ -2167,6 +2200,7 @@ function Home() {
               whileHover={{ y: -6 }}
               className="premium-panel p-6 sm:p-7 md:col-span-3"
             >
+              <CardBg />
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-300/10 text-emerald-200">
                 <CheckCircle2 className="h-6 w-6" />
               </div>
@@ -2203,6 +2237,7 @@ function Home() {
               whileHover={{ y: -6 }}
               className="premium-panel overflow-hidden p-6 sm:p-7 md:col-span-3"
             >
+              <CardBg />
               <div className="relative flex h-full flex-col">
                 <span className="pointer-events-none absolute -top-4 left-0 select-none text-8xl font-black leading-none text-cyan-300/10">
                   “
@@ -2255,8 +2290,10 @@ function Home() {
                     viewport={{ once: true }}
                     transition={{ delay: index * 0.08, duration: 0.55 }}
                     whileHover={{ y: -8 }}
-                    className={`premium-card group overflow-hidden p-5 transition ${theme.hover}`}
+                    className={`premium-card group isolate relative overflow-hidden p-5 transition ${theme.hover}`}
                   >
+              <CardBg />
+
                     {getServiceVisual(service.icon)}
 
                     <div className="mt-5 flex items-center gap-3">
@@ -2354,8 +2391,9 @@ function Home() {
                     viewport={{ once: true }}
                     transition={{ delay: index * 0.08, duration: 0.55 }}
                     whileHover={{ y: -8 }}
-                    className="premium-card flex flex-col p-6"
+                    className="premium-card isolate relative flex flex-col overflow-hidden p-6"
                   >
+              <CardBg />
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                       <span
                         className={`rounded-full px-4 py-2 text-sm ${getSubjectBadgeClass(
@@ -2441,6 +2479,7 @@ function Home() {
                   whileHover={{ y: -8 }}
                   className="premium-card p-6"
                 >
+              <CardBg />
                   <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-300/10 text-emerald-200">
                     <Trophy className="h-7 w-7" />
                   </div>
@@ -2496,6 +2535,7 @@ function Home() {
                   whileHover={{ y: -8 }}
                   className="premium-card group overflow-hidden"
                 >
+              <CardBg />
                   <div className="relative overflow-hidden">
                     <img
                       src={item.image_url}
@@ -2577,6 +2617,7 @@ function Home() {
                     whileHover={{ y: -8 }}
                     className="premium-card p-6 sm:p-7 md:p-8"
                   >
+              <CardBg />
                     <div className="mb-4 flex gap-1 text-yellow-200">
                       {Array.from({ length: rating }).map((_, starIndex) => (
                         <Star
@@ -2620,6 +2661,7 @@ function Home() {
       >
         <div className="mx-auto max-w-7xl">
           <div className="premium-panel overflow-hidden p-6 sm:p-7 md:p-12">
+              <CardBg />
             <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12">
               <div>
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">

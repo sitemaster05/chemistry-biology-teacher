@@ -300,7 +300,10 @@ function SiteDesignProvider() {
         ? `
         .science-bg-anim,
         .science-bubble,
-        .science-orbit-ring {
+        .science-orbit-ring,
+        .net-pulse-1,
+        .net-pulse-2,
+        .net-pulse-3 {
           animation: none !important;
         }
       `

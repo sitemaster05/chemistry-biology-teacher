@@ -61,6 +61,26 @@ body {
   backdrop-filter: blur(24px);
 }
 
+
+/* Полупрозрачная картинка-подложка для карточек: вписывается в размер блока */
+.card-bg-image {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -2;
+  opacity: 0.10;
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+  filter: grayscale(1) brightness(0.85) contrast(1.1);
+  mix-blend-mode: soft-light;
+  transition: opacity 320ms ease;
+}
+.premium-card:hover .card-bg-image,
+.premium-panel:hover .card-bg-image {
+  opacity: 0.15;
+}
+
 .premium-panel {
   border-radius: 1.25rem;
 }
@@ -70,16 +90,70 @@ body {
   overflow: hidden;
 }
 
-.premium-card::before {
+/* ============================================================
+   Богатый многослойный фон для ВСЕХ информационных блоков
+   (карточки .premium-card и панели .premium-panel).
+   z-index:-1 => фон лежит поверх стекла карточки, но под контентом,
+   поэтому не мешает тексту, иконкам и подсветке курсора.
+   ============================================================ */
+.premium-card::before,
+.premium-panel::before {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: -1;
   pointer-events: none;
-  background: linear-gradient(135deg, rgba(103, 232, 249, 0.10), transparent 38%);
-  opacity: 0;
-  transition: opacity 220ms ease;
+  border-radius: inherit;
+  background-image:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 1px),
+    radial-gradient(120% 100% at 10% 0%, rgba(103, 232, 249, 0.16), rgba(103, 232, 249, 0) 58%),
+    radial-gradient(110% 90% at 100% 100%, rgba(110, 231, 183, 0.11), rgba(110, 231, 183, 0) 60%),
+    linear-gradient(rgba(148, 197, 253, 0.06) 1px, rgba(148, 197, 253, 0) 1px),
+    linear-gradient(90deg, rgba(148, 197, 253, 0.06) 1px, rgba(148, 197, 253, 0) 1px);
+  background-size:
+    100% 1px,
+    200% 200%,
+    200% 200%,
+    34px 34px,
+    34px 34px;
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat, repeat;
+  opacity: 0.9;
+  transition: opacity 320ms ease;
+  animation: premiumAmbient 26s ease-in-out infinite;
 }
 
+@keyframes premiumAmbient {
+  0% {
+    background-position:
+      0 0,
+      0% 0%,
+      100% 100%,
+      0 0,
+      0 0;
+  }
+  50% {
+    background-position:
+      0 0,
+      55% 35%,
+      25% 60%,
+      34px 34px,
+      34px 34px;
+  }
+  100% {
+    background-position:
+      0 0,
+      100% 70%,
+      0% 0%,
+      68px 68px,
+      68px 68px;
+  }
+}
+
+.premium-panel {
+  overflow: hidden;
+}
+
+/* Хайлайт верхней кромки + усиление фона при наведении */
 .premium-card:hover::before {
   opacity: 1;
 }
@@ -95,6 +169,7 @@ body {
   box-shadow:
     0 28px 80px rgba(0, 0, 0, 0.28),
     0 0 38px rgba(103, 232, 249, 0.10);
+  border-color: rgba(103, 232, 249, 0.4);
 }
 
 .science-orbit {
@@ -487,6 +562,33 @@ body {
   }
 }
 
+/* --- Пульсация узлов молекулярной сети (карточки) --- */
+
+.net-pulse-1 {
+  animation: netPulse 4s ease-in-out infinite;
+}
+
+.net-pulse-2 {
+  animation: netPulse 5s ease-in-out 1.2s infinite;
+}
+
+.net-pulse-3 {
+  animation: netPulse 3.5s ease-in-out 0.6s infinite;
+}
+
+@keyframes netPulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    r: 2;
+  }
+
+  50% {
+    opacity: 0.65;
+    r: 3.5;
+  }
+}
+
 /* --- Парящие плитки-символы в фоне (перенесены из переднего плана) --- */
 
 .bg-ghost {
@@ -591,7 +693,7 @@ body {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  z-index: 1;
+  z-index: 3;
   opacity: 0;
   transition: opacity 350ms ease;
   pointer-events: none;
@@ -697,6 +799,10 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .premium-card::before,
+  .premium-panel::before { animation: none; }
+  .premium-card::before,
+  .premium-panel::before,
   .science-orbit-ring,
   .data-stream,
   .formula-track,
@@ -706,7 +812,10 @@ body {
   .science-bubble,
   .hero-gradient-text,
   .btn-shine::after,
-  .flask-bubble {
+  .flask-bubble,
+  .net-pulse-1,
+  .net-pulse-2,
+  .net-pulse-3 {
     animation: none;
   }
 }
@@ -735,3 +844,4 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(103, 232, 249, 0.38);
 }
+
