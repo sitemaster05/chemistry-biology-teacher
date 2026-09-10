@@ -1628,10 +1628,10 @@ function Home() {
       (subject) => !preferredSubjects.includes(subject)
     ),
   ];
+  // Каждый материал относится ровно к одному предмету:
+  // совпадение строгое, без частичного поиска
   const matchesSubject = (material, filter) =>
-    filter === "Все" ||
-    material.subject === filter ||
-    (material.subject || "").includes(filter);
+    filter === "Все" || material.subject === filter;
   const visibleMaterials = materials.filter((material) =>
     matchesSubject(material, subjectFilter)
   );
