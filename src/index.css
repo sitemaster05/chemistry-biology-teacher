@@ -20,6 +20,19 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+h1,
+h2,
+h3,
+.hero-gradient-text {
+  font-family:
+    "Segoe UI Variable Display",
+    "Manrope",
+    Inter,
+    system-ui,
+    sans-serif;
+  letter-spacing: 0 !important;
+}
+
 /* На мобильных запрещаем iOS автоматически зумить страницу
    при фокусе на полях с мелким шрифтом */
 @media (max-width: 767px) {
@@ -55,9 +68,15 @@ body {
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.11);
   background:
-    linear-gradient(145deg, rgba(15, 23, 42, 0.72), rgba(2, 6, 23, 0.58)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02));
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+    radial-gradient(120% 120% at 0% 0%, rgba(103, 232, 249, 0.16), transparent 42%),
+    radial-gradient(100% 90% at 100% 100%, rgba(110, 231, 183, 0.12), transparent 48%),
+    linear-gradient(145deg, rgba(15, 23, 42, 0.82), rgba(2, 6, 23, 0.66)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.02));
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.30),
+    0 0 0 1px rgba(103, 232, 249, 0.08),
+    0 0 38px rgba(103, 232, 249, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(24px);
 }
 
@@ -106,47 +125,15 @@ body {
   border-radius: inherit;
   background-image:
     linear-gradient(to bottom, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 1px),
-    radial-gradient(120% 100% at 10% 0%, rgba(103, 232, 249, 0.16), rgba(103, 232, 249, 0) 58%),
-    radial-gradient(110% 90% at 100% 100%, rgba(110, 231, 183, 0.11), rgba(110, 231, 183, 0) 60%),
-    linear-gradient(rgba(148, 197, 253, 0.06) 1px, rgba(148, 197, 253, 0) 1px),
-    linear-gradient(90deg, rgba(148, 197, 253, 0.06) 1px, rgba(148, 197, 253, 0) 1px);
+    linear-gradient(rgba(148, 197, 253, 0.055) 1px, rgba(148, 197, 253, 0) 1px),
+    linear-gradient(90deg, rgba(148, 197, 253, 0.055) 1px, rgba(148, 197, 253, 0) 1px);
   background-size:
     100% 1px,
-    200% 200%,
-    200% 200%,
     34px 34px,
     34px 34px;
-  background-repeat: no-repeat, no-repeat, no-repeat, repeat, repeat;
-  opacity: 0.9;
+  background-repeat: no-repeat, repeat, repeat;
+  opacity: 0.55;
   transition: opacity 320ms ease;
-  animation: premiumAmbient 26s ease-in-out infinite;
-}
-
-@keyframes premiumAmbient {
-  0% {
-    background-position:
-      0 0,
-      0% 0%,
-      100% 100%,
-      0 0,
-      0 0;
-  }
-  50% {
-    background-position:
-      0 0,
-      55% 35%,
-      25% 60%,
-      34px 34px,
-      34px 34px;
-  }
-  100% {
-    background-position:
-      0 0,
-      100% 70%,
-      0% 0%,
-      68px 68px,
-      68px 68px;
-  }
 }
 
 .premium-panel {
@@ -167,9 +154,13 @@ body {
 
 .premium-card:hover {
   box-shadow:
-    0 28px 80px rgba(0, 0, 0, 0.28),
-    0 0 38px rgba(103, 232, 249, 0.10);
-  border-color: rgba(103, 232, 249, 0.4);
+    0 30px 80px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(103, 232, 249, 0.22),
+    0 0 26px rgba(255, 219, 122, 0.16),
+    0 0 54px rgba(103, 232, 249, 0.18),
+    0 0 28px rgba(110, 231, 183, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  border-color: rgba(103, 232, 249, 0.48);
 }
 
 .science-orbit {
@@ -344,7 +335,6 @@ body {
 .aurora {
   position: absolute;
   border-radius: 9999px;
-  will-change: transform;
 }
 
 .aurora-one {
@@ -357,7 +347,6 @@ body {
     var(--site-primary-soft, rgba(103, 232, 249, 0.18)) 0%,
     transparent 64%
   );
-  animation: auroraDriftOne 52s ease-in-out infinite alternate;
 }
 
 .aurora-two {
@@ -370,7 +359,6 @@ body {
     var(--site-secondary-soft, rgba(110, 231, 183, 0.18)) 0%,
     transparent 64%
   );
-  animation: auroraDriftTwo 64s ease-in-out infinite alternate;
 }
 
 .aurora-three {
@@ -383,25 +371,6 @@ body {
     rgba(147, 197, 253, 0.12) 0%,
     transparent 66%
   );
-  animation: auroraDriftThree 58s ease-in-out infinite alternate;
-}
-
-@keyframes auroraDriftOne {
-  to {
-    transform: translate3d(6vw, 4vh, 0) scale(1.08);
-  }
-}
-
-@keyframes auroraDriftTwo {
-  to {
-    transform: translate3d(-5vw, 6vh, 0) scale(1.12);
-  }
-}
-
-@keyframes auroraDriftThree {
-  to {
-    transform: translate3d(4vw, -5vh, 0) scale(1.06);
-  }
 }
 
 /* --- Молекулярная решётка (бензольные кольца) --- */
@@ -411,14 +380,7 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  animation: latticeDrift 90s ease-in-out infinite alternate;
-  will-change: transform;
-}
-
-@keyframes latticeDrift {
-  to {
-    transform: translate3d(-44px, -32px, 0);
-  }
+  opacity: 0.9;
 }
 
 /* --- Пузырьки, всплывающие как в растворе --- */
@@ -436,8 +398,7 @@ body {
       transparent 72%
     );
   opacity: 0;
-  animation: bubbleRise linear infinite;
-  will-change: transform, opacity;
+  display: none;
 }
 
 @keyframes bubbleRise {
@@ -467,7 +428,6 @@ body {
   color: var(--site-primary, #67e8f9);
   opacity: 0.055;
   filter: blur(1.5px);
-  will-change: transform;
 }
 
 .bg-watermark-atom {
@@ -475,7 +435,6 @@ body {
   right: 6%;
   width: 190px;
   height: 190px;
-  animation: watermarkFloatA 38s ease-in-out infinite alternate;
 }
 
 .bg-watermark-dna {
@@ -484,7 +443,6 @@ body {
   width: 170px;
   height: 170px;
   color: var(--site-secondary, #6ee7b7);
-  animation: watermarkFloatB 44s ease-in-out infinite alternate;
 }
 
 .bg-watermark-flask {
@@ -493,7 +451,6 @@ body {
   width: 130px;
   height: 130px;
   color: var(--site-accent, #93c5fd);
-  animation: watermarkFloatC 50s ease-in-out infinite alternate;
 }
 
 /* Глобус — география и экология */
@@ -503,47 +460,6 @@ body {
   width: 150px;
   height: 150px;
   color: var(--site-secondary, #6ee7b7);
-  animation: watermarkFloatD 47s ease-in-out infinite alternate;
-}
-
-@keyframes watermarkFloatA {
-  from {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-
-  to {
-    transform: translate3d(-26px, 30px, 0) rotate(24deg);
-  }
-}
-
-@keyframes watermarkFloatB {
-  from {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-
-  to {
-    transform: translate3d(30px, -24px, 0) rotate(-18deg);
-  }
-}
-
-@keyframes watermarkFloatC {
-  from {
-    transform: translate3d(0, 0, 0) rotate(-8deg);
-  }
-
-  to {
-    transform: translate3d(-20px, -18px, 0) rotate(14deg);
-  }
-}
-
-@keyframes watermarkFloatD {
-  from {
-    transform: translate3d(0, 0, 0) rotate(12deg);
-  }
-
-  to {
-    transform: translate3d(26px, 28px, 0) rotate(-20deg);
-  }
 }
 
 /* На мобильных оставляем только один водяной знак — без перегруза */
@@ -604,7 +520,6 @@ body {
   opacity: 0.32;
   backdrop-filter: blur(4px);
   pointer-events: none;
-  will-change: transform;
 }
 
 .bg-ghost-atom {
@@ -612,7 +527,6 @@ body {
   left: 8%;
   width: 88px;
   height: 88px;
-  animation: ghostFloatA 17s ease-in-out infinite alternate;
 }
 
 .bg-ghost-dna {
@@ -631,27 +545,6 @@ body {
     var(--site-secondary, #6ee7b7) 6%,
     transparent
   );
-  animation: ghostFloatB 21s ease-in-out infinite alternate;
-}
-
-@keyframes ghostFloatA {
-  from {
-    transform: translate3d(0, 0, 0) rotate(-6deg);
-  }
-
-  to {
-    transform: translate3d(22px, -26px, 0) rotate(8deg);
-  }
-}
-
-@keyframes ghostFloatB {
-  from {
-    transform: translate3d(0, 0, 0) rotate(5deg);
-  }
-
-  to {
-    transform: translate3d(-24px, 20px, 0) rotate(-7deg);
-  }
 }
 
 /* Обёртка орбиты атома в фоне: приглушение до «водяного знака» */
@@ -698,9 +591,9 @@ body {
   transition: opacity 350ms ease;
   pointer-events: none;
   background: radial-gradient(
-    420px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-    var(--site-primary-soft, rgba(103, 232, 249, 0.18)),
-    transparent 42%
+    520px circle at 50% 0%,
+    rgba(103, 232, 249, 0.16),
+    transparent 48%
   );
 }
 
@@ -708,8 +601,124 @@ body {
   opacity: 1;
 }
 
+.premium-card::after,
+.premium-panel::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 3;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    conic-gradient(
+      from var(--sun-angle, 0deg),
+      transparent 0deg,
+      rgba(255, 255, 255, 0.95) 18deg,
+      rgba(255, 219, 122, 0.9) 34deg,
+      rgba(103, 232, 249, 0.86) 58deg,
+      transparent 92deg,
+      transparent 188deg,
+      rgba(110, 231, 183, 0.82) 214deg,
+      rgba(255, 255, 255, 0.92) 232deg,
+      transparent 274deg,
+      transparent 360deg
+    );
+  filter: drop-shadow(0 0 16px rgba(255, 219, 122, 0.34))
+    drop-shadow(0 0 28px rgba(103, 232, 249, 0.22))
+    drop-shadow(0 0 42px rgba(255, 255, 255, 0.12));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  transition: opacity 220ms ease;
+}
+
+.premium-card:hover::after,
+.premium-panel:hover::after {
+  opacity: 1;
+  animation: solarRim 2.6s linear infinite;
+}
+
+.premium-card:hover :is(h3, h4, p),
+.premium-panel:hover :is(h2, h3, h4, p):not(form p) {
+  animation: prismText 2.8s ease-in-out infinite;
+}
+
+.premium-card :is(h3, h4, p),
+.premium-panel :is(h2, h3, h4, p):not(form p) {
+  transition:
+    color 260ms ease,
+    text-shadow 260ms ease,
+    font-family 260ms ease,
+    font-style 260ms ease,
+    letter-spacing 260ms ease;
+}
+
+.premium-card:hover :is(h3, h4),
+.premium-panel:hover :is(h2, h3, h4) {
+  font-family:
+    "Segoe Print",
+    Georgia,
+    "Times New Roman",
+    serif;
+  font-style: italic;
+  letter-spacing: 0.01em !important;
+  text-shadow:
+    0 0 10px rgba(251, 191, 36, 0.34),
+    0 0 22px rgba(103, 232, 249, 0.22);
+}
+
+.premium-card:hover :is(p),
+.premium-panel:hover :is(p):not(form p) {
+  font-family:
+    Georgia,
+    "Times New Roman",
+    serif;
+  font-style: italic;
+  letter-spacing: 0.01em !important;
+}
+
+@property --sun-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes solarRim {
+  to {
+    --sun-angle: 360deg;
+  }
+}
+
+@keyframes prismText {
+  0%,
+  100% {
+    color: inherit;
+    text-shadow: 0 0 0 rgba(103, 232, 249, 0);
+  }
+
+  34% {
+    color: #fef3c7;
+    text-shadow:
+      0 0 12px rgba(251, 191, 36, 0.28),
+      0 0 22px rgba(103, 232, 249, 0.18);
+  }
+
+  68% {
+    color: #a7f3d0;
+    text-shadow:
+      0 0 14px rgba(110, 231, 183, 0.28),
+      0 0 28px rgba(103, 232, 249, 0.2);
+  }
+}
+
 @media (hover: none) {
-  .spotlight-card::after {
+  .spotlight-card::after,
+  .premium-card::after,
+  .premium-panel::after {
     display: none;
   }
 }
@@ -727,13 +736,6 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: gradientFlow 9s linear infinite;
-}
-
-@keyframes gradientFlow {
-  to {
-    background-position: 300% 0;
-  }
 }
 
 /* Пробегающий блик на кнопках */
@@ -756,19 +758,12 @@ body {
     rgba(255, 255, 255, 0.4),
     transparent
   );
-  animation: shineSweep 3.8s ease-in-out infinite;
   pointer-events: none;
 }
 
-@keyframes shineSweep {
-  0%,
-  55% {
-    left: -90%;
-  }
-
-  100% {
-    left: 160%;
-  }
+.btn-shine:hover::after {
+  left: 160%;
+  transition: left 760ms ease;
 }
 
 /* Пузырьки в колбе (блок «Обо мне») */

@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Clock3,
   Dna,
   Droplets,
   FlaskConical,
@@ -282,18 +283,11 @@ const subjectShowcase = [
 // Пузырьки фона: позиция, размер (px), длительность и задержка (сек),
 // дрейф по горизонтали (px) и максимальная прозрачность.
 const backgroundBubbles = [
-  { left: "4%", size: 8, duration: 30, delay: 0, x: 26, opacity: 0.34 },
-  { left: "11%", size: 6, duration: 38, delay: 7, x: -18, opacity: 0.26 },
-  { left: "18%", size: 12, duration: 46, delay: 14, x: 34, opacity: 0.2 },
-  { left: "27%", size: 6, duration: 33, delay: 3, x: -22, opacity: 0.3 },
-  { left: "35%", size: 9, duration: 41, delay: 19, x: 18, opacity: 0.24 },
-  { left: "44%", size: 6, duration: 36, delay: 10, x: -30, opacity: 0.28 },
-  { left: "53%", size: 11, duration: 48, delay: 25, x: 24, opacity: 0.2 },
-  { left: "61%", size: 7, duration: 34, delay: 5, x: -16, opacity: 0.3 },
-  { left: "69%", size: 13, duration: 50, delay: 16, x: 30, opacity: 0.18 },
-  { left: "77%", size: 6, duration: 37, delay: 22, x: -26, opacity: 0.28 },
-  { left: "85%", size: 9, duration: 43, delay: 9, x: 20, opacity: 0.24 },
-  { left: "93%", size: 6, duration: 31, delay: 28, x: -14, opacity: 0.32 },
+  { left: "8%", size: 8, duration: 44, delay: 0, x: 18, opacity: 0.22 },
+  { left: "24%", size: 6, duration: 52, delay: 9, x: -16, opacity: 0.18 },
+  { left: "47%", size: 10, duration: 58, delay: 18, x: 22, opacity: 0.16 },
+  { left: "72%", size: 7, duration: 50, delay: 6, x: -18, opacity: 0.18 },
+  { left: "90%", size: 9, duration: 60, delay: 24, x: 16, opacity: 0.16 },
 ];
 
 const sectionMotion = {
@@ -356,23 +350,8 @@ function AnimatedCounter({ value }) {
 
 
 function SpotlightCard({ className = "", children, ...props }) {
-  const ref = useRef(null);
-
-  function handleMouseMove(event) {
-    const card = ref.current;
-
-    if (!card) return;
-
-    const rect = card.getBoundingClientRect();
-
-    card.style.setProperty("--mouse-x", `${event.clientX - rect.left}px`);
-    card.style.setProperty("--mouse-y", `${event.clientY - rect.top}px`);
-  }
-
   return (
     <motion.div
-      ref={ref}
-      onMouseMove={handleMouseMove}
       className={`spotlight-card ${className}`}
       {...props}
     >
@@ -732,164 +711,6 @@ function getServiceIcon(iconName) {
     default:
       return <FlaskConical className={className} />;
   }
-}
-
-function getServiceVisual(iconName) {
-  if (iconName === "dna") {
-    return (
-      <div className="relative h-20 overflow-hidden rounded-3xl border border-emerald-300/15 bg-emerald-300/10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(110,231,183,0.35),transparent_35%),radial-gradient(circle_at_80%_70%,rgba(103,232,249,0.22),transparent_35%)]" />
-
-        <motion.div
-          animate={{ x: [0, 18, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute left-4 top-4 h-12 w-12 rounded-full border-2 border-emerald-200/60"
-        />
-
-        <motion.div
-          animate={{ x: [0, -18, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute right-4 bottom-4 h-12 w-12 rounded-full border-2 border-cyan-200/60"
-        />
-
-        <Dna className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 text-emerald-100" />
-      </div>
-    );
-  }
-
-  if (iconName === "graduation") {
-    return (
-      <div className="relative h-20 overflow-hidden rounded-3xl border border-blue-300/15 bg-blue-300/10">
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(147,197,253,0.28),transparent),radial-gradient(circle_at_80%_20%,rgba(103,232,249,0.28),transparent_35%)]" />
-
-        <div className="absolute bottom-4 left-5 h-3 w-20 rounded-full bg-blue-100/30" />
-        <div className="absolute bottom-8 left-5 h-3 w-28 rounded-full bg-cyan-100/30" />
-        <div className="absolute bottom-12 left-5 h-3 w-16 rounded-full bg-white/30" />
-
-        <GraduationCap className="absolute right-5 top-5 h-10 w-10 text-blue-100" />
-      </div>
-    );
-  }
-
-  if (iconName === "book") {
-    return (
-      <div className="relative h-20 overflow-hidden rounded-3xl border border-cyan-300/15 bg-cyan-300/10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(103,232,249,0.3),transparent_35%),linear-gradient(135deg,transparent,rgba(255,255,255,0.08))]" />
-
-        <div className="absolute left-5 top-5 h-11 w-8 rounded-lg border border-cyan-100/40 bg-cyan-100/20" />
-        <div className="absolute left-14 top-5 h-11 w-8 rounded-lg border border-emerald-100/40 bg-emerald-100/20" />
-        <div className="absolute left-24 top-5 h-11 w-8 rounded-lg border border-blue-100/40 bg-blue-100/20" />
-
-        <BookOpen className="absolute right-5 top-5 h-10 w-10 text-cyan-100" />
-      </div>
-    );
-  }
-
-  if (iconName === "microscope") {
-    return (
-      <div className="relative h-20 overflow-hidden rounded-3xl border border-violet-300/15 bg-violet-300/10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_35%,rgba(196,181,253,0.33),transparent_35%),radial-gradient(circle_at_25%_80%,rgba(103,232,249,0.2),transparent_35%)]" />
-
-        <Microscope className="absolute left-5 top-5 h-10 w-10 text-violet-100" />
-        <div className="absolute right-5 top-6 h-4 w-4 rounded-full bg-cyan-200/70" />
-        <div className="absolute right-12 top-10 h-2.5 w-2.5 rounded-full bg-emerald-200/70" />
-        <div className="absolute right-8 bottom-5 h-3 w-3 rounded-full bg-white/60" />
-      </div>
-    );
-  }
-
-  if (iconName === "atom") {
-    return (
-      <div className="relative h-20 overflow-hidden rounded-3xl border border-cyan-300/15 bg-cyan-300/10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(103,232,249,0.28),transparent_38%)]" />
-
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 9, repeat: Infinity, ease: "linear" }}
-          className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-100/50"
-        />
-
-        <motion.div
-          animate={{ rotate: -360 }}
-          transition={{ duration: 11, repeat: Infinity, ease: "linear" }}
-          className="absolute left-1/2 top-1/2 h-8 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-emerald-100/50"
-        />
-
-        <div className="absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-100" />
-      </div>
-    );
-  }
-
-  if (iconName === "globe") {
-    return (
-      <div className="relative h-20 overflow-hidden rounded-3xl border border-amber-300/15 bg-amber-300/10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(252,211,77,0.3),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(110,231,183,0.2),transparent_35%)]" />
-
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 16, repeat: Infinity, ease: "linear" }}
-          className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-100/50"
-        />
-
-        <motion.div
-          animate={{ rotate: -360 }}
-          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-          className="absolute left-1/2 top-1/2 h-8 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-emerald-100/40"
-        />
-
-        <Globe2 className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 text-amber-100" />
-
-        <div className="absolute right-6 top-6 h-2.5 w-2.5 rounded-full bg-emerald-200/80" />
-        <div className="absolute bottom-6 left-6 h-2 w-2 rounded-full bg-cyan-200/70" />
-      </div>
-    );
-  }
-
-  if (iconName === "leaf") {
-    return (
-      <div className="relative h-20 overflow-hidden rounded-3xl border border-lime-300/15 bg-lime-300/10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_75%,rgba(163,230,53,0.3),transparent_38%),radial-gradient(circle_at_75%_25%,rgba(110,231,183,0.25),transparent_35%)]" />
-
-        <Leaf className="absolute left-5 top-5 h-10 w-10 text-lime-100" />
-
-        <motion.div
-          animate={{ y: [0, -6, 0], rotate: [0, 8, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute right-6 top-7 h-6 w-6 rounded-full border-2 border-lime-200/60"
-        />
-
-        <motion.div
-          animate={{ y: [0, 5, 0] }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-5 right-12 h-2.5 w-2.5 rounded-full bg-emerald-200/80"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative h-20 overflow-hidden rounded-3xl border border-cyan-300/15 bg-cyan-300/10">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(103,232,249,0.35),transparent_35%),radial-gradient(circle_at_80%_75%,rgba(110,231,183,0.25),transparent_35%)]" />
-
-      <div className="absolute left-6 top-5 h-11 w-8 rounded-b-2xl rounded-t-lg border border-cyan-100/50 bg-cyan-100/20" />
-      <div className="absolute left-7 top-9 h-5 w-6 rounded-b-xl bg-cyan-200/45" />
-      <div className="absolute left-8 top-3 h-3 w-4 rounded-t-md border border-cyan-100/50" />
-
-      <motion.div
-        animate={{ y: [0, -5, 0], opacity: [0.4, 1, 0.4] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute right-8 top-6 h-3 w-3 rounded-full bg-emerald-200"
-      />
-
-      <motion.div
-        animate={{ y: [0, -7, 0], opacity: [0.4, 1, 0.4] }}
-        transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute right-14 bottom-6 h-2.5 w-2.5 rounded-full bg-cyan-200"
-      />
-
-      <FlaskConical className="absolute right-5 top-5 h-10 w-10 text-cyan-100" />
-    </div>
-  );
 }
 
 function getSubjectBadgeClass(subject) {
@@ -1622,6 +1443,54 @@ function ContactForm() {
   );
 }
 
+function DagestanClock() {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(new Date()), 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const time = new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(now);
+
+  const date = new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(now);
+
+  return (
+    <div className="relative overflow-hidden rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-4 shadow-[0_0_34px_rgba(103,232,249,0.12)] sm:p-5">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(103,232,249,0.22),transparent_42%)]" />
+
+      <div className="relative flex items-center gap-4">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950/55 text-cyan-200 ring-1 ring-cyan-300/25">
+          <Clock3 className="h-5 w-5" />
+        </span>
+
+        <span className="min-w-0">
+          <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-cyan-100/70">
+            Время в Дагестане
+          </span>
+          <span className="mt-1 block font-mono text-3xl font-black leading-none text-white tabular-nums sm:text-4xl">
+            {time}
+          </span>
+          <span className="mt-2 block text-sm text-slate-300">
+            {date}, МСК UTC+3
+          </span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function Home() {
   const [cachedSiteData] = useState(() => readCachedSiteData());
   const [hasDisplayData, setHasDisplayData] = useState(Boolean(cachedSiteData));
@@ -2320,13 +2189,11 @@ function Home() {
                   >
               <CardBg />
 
-                    {getServiceVisual(service.icon)}
-
-                    <div className="mt-5 flex items-center gap-3">
+                    <div className="flex items-center gap-3">
                       <div
-                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${theme.iconBox}`}
+                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${theme.iconBox} shadow-lg shadow-slate-950/20`}
                       >
-                        {getServiceIcon(service.icon)}
+                        {getServiceIcon(service.icon, "h-6 w-6")}
                       </div>
 
                       <h3 className="text-lg font-bold sm:text-xl">
@@ -2580,7 +2447,9 @@ function Home() {
                     </p>
                   )}
 
-                  <h3 className="text-xl font-bold">{achievement.title}</h3>
+                  <h3 className="text-xl font-bold">
+                    {achievement.title}
+                  </h3>
 
                   <p className="mt-3 text-sm leading-7 text-slate-300">
                     {achievement.text || achievement.description}
@@ -2725,7 +2594,9 @@ function Home() {
                       </div>
 
                       <div className="min-w-0">
-                        <p className="font-bold text-white">{review.name}</p>
+                        <p className="font-bold text-white">
+                          {review.name}
+                        </p>
 
                         {review.role && (
                           <p className="mt-0.5 text-sm text-slate-400">
@@ -2825,6 +2696,8 @@ function Home() {
                       </span>
                     </div>
                   )}
+
+                  <DagestanClock />
                 </div>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">

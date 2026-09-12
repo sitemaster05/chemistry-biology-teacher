@@ -5,11 +5,11 @@ const defaultDesign = {
   theme_preset: "science",
   background_style: "aurora",
   card_style: "glass",
-  animation_style: "smooth",
+  animation_style: "none",
   animation_intensity: "medium",
   rounded_style: "extra",
   glow_enabled: true,
-  particles_enabled: true,
+  particles_enabled: false,
 };
 
 const themes = {
@@ -63,7 +63,7 @@ function getAnimationDuration(intensity) {
 
 function getBackgroundCss(design, theme) {
   const animationDuration = getAnimationDuration(design.animation_intensity);
-  const animationsEnabled = design.animation_style !== "none";
+  const animationsEnabled = design.animation_style === "strong";
   const animation = animationsEnabled
     ? `designAurora ${animationDuration} ease-in-out infinite alternate`
     : "none";
@@ -193,7 +193,8 @@ function getCardCss(design, theme) {
         box-shadow:
           0 0 0 1px ${theme.primarySoft},
           0 22px 70px rgba(0,0,0,0.32),
-          0 0 42px ${theme.primarySoft} !important;
+          0 0 42px ${theme.primarySoft},
+          inset 0 1px 0 rgba(255,255,255,0.12) !important;
       }
     `;
   }
@@ -201,11 +202,17 @@ function getCardCss(design, theme) {
   return `
     body .bg-white\\/5,
     body .bg-slate-900\\/70,
-    body .bg-slate-900\\/80 {
-      background: rgba(255,255,255,0.065) !important;
-      border-color: rgba(255,255,255,0.13) !important;
+      body .bg-slate-900\\/80 {
+      background:
+        radial-gradient(circle at 0% 0%, ${theme.primarySoft}, transparent 46%),
+        rgba(255,255,255,0.06) !important;
+      border-color: rgba(255,255,255,0.14) !important;
       backdrop-filter: blur(22px) !important;
-      box-shadow: 0 24px 80px rgba(0,0,0,0.24) !important;
+      box-shadow:
+        0 20px 64px rgba(0,0,0,0.26),
+        0 0 0 1px rgba(255,255,255,0.045),
+        0 0 30px ${theme.primarySoft},
+        inset 0 1px 0 rgba(255,255,255,0.10) !important;
     }
   `;
 }
@@ -259,7 +266,8 @@ function SiteDesignProvider() {
         body .shadow-xl {
           box-shadow:
             0 22px 80px rgba(0,0,0,0.34),
-            0 0 38px ${theme.primarySoft} !important;
+            0 0 42px ${theme.primarySoft},
+            0 0 24px ${theme.secondarySoft} !important;
         }
       `
       : `
