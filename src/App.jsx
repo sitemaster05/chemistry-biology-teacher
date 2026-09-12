@@ -6,6 +6,7 @@ import SiteDesignProvider from "./components/SiteDesignProvider";
 
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 
 function RouteLoader() {
   return (
@@ -25,6 +26,7 @@ function App() {
       <Suspense fallback={<RouteLoader />}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
 
           <Route path="/login" element={<AdminLogin />} />
 

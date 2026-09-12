@@ -1608,7 +1608,14 @@ function ContactForm() {
 
         <p className="text-center text-xs leading-5 text-slate-500">
           Нажимая «Отправить сообщение», вы соглашаетесь на обработку
-          указанных данных только для обратной связи.
+          указанных данных только для обратной связи и принимаете{" "}
+          <a
+            href="/privacy"
+            className="font-semibold text-cyan-200 transition hover:text-cyan-100"
+          >
+            политику конфиденциальности
+          </a>
+          .
         </p>
       </form>
     </div>
@@ -2883,6 +2890,9 @@ function Home() {
                 {link.label}
               </a>
             ))}
+            <a href="/privacy" className="transition hover:text-cyan-200">
+              Политика конфиденциальности
+            </a>
           </nav>
         </div>
       </footer>
